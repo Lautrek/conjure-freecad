@@ -26,13 +26,20 @@ cp -r src "$CONJURE_DIR/"
 # Copy config example
 cp config.example.yaml "$CONJURE_DIR/"
 
-# Bundle MCP bridge for standalone MCP server
-mkdir -p "$CONJURE_DIR/bridge_root/bridge"
-cp ../../server/src/bridge/conjure_bridge.py "$CONJURE_DIR/bridge_root/bridge/"
-cp ../../server/src/bridge/mcp_auth.py       "$CONJURE_DIR/bridge_root/bridge/"
-cp ../../server/src/bridge/__init__.py       "$CONJURE_DIR/bridge_root/bridge/"
-cp -r ../../server/src/bridge/resources      "$CONJURE_DIR/bridge_root/bridge/"
-cp -r ../../server/src/bridge/prompts        "$CONJURE_DIR/bridge_root/bridge/"
+# Bundle MCP bridge for standalone MCP server (if available)
+# These files exist in the full Conjure repo but not in the standalone public repo
+BRIDGE_SRC="../../server/src/bridge"
+if [ -d "$BRIDGE_SRC" ]; then
+    echo "Including MCP bridge files..."
+    mkdir -p "$CONJURE_DIR/bridge_root/bridge"
+    cp "$BRIDGE_SRC/conjure_bridge.py" "$CONJURE_DIR/bridge_root/bridge/" 2>/dev/null || true
+    cp "$BRIDGE_SRC/mcp_auth.py"       "$CONJURE_DIR/bridge_root/bridge/" 2>/dev/null || true
+    cp "$BRIDGE_SRC/__init__.py"       "$CONJURE_DIR/bridge_root/bridge/" 2>/dev/null || true
+    cp -r "$BRIDGE_SRC/resources"      "$CONJURE_DIR/bridge_root/bridge/" 2>/dev/null || true
+    cp -r "$BRIDGE_SRC/prompts"        "$CONJURE_DIR/bridge_root/bridge/" 2>/dev/null || true
+else
+    echo "Note: MCP bridge files not available (standalone build)"
+fi
 
 # Create ZIP with conjure folder at root
 ZIPFILE="dist/conjure-freecad-${VERSION}.zip"
