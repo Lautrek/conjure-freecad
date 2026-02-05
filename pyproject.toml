@@ -19,7 +19,6 @@ classifiers = [
 ]
 
 dependencies = [
-    "conjure-cad>=0.1.0",
     "mcp>=0.1.0",
     "pydantic>=2.0",
 ]
