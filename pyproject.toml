@@ -40,3 +40,21 @@ build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src", "workbench"]
+
+[tool.ruff]
+# FreeCAD modules are available at runtime
+builtins = ["FreeCAD", "FreeCADGui", "Part", "Draft", "Sketcher", "PartDesign"]
+
+[tool.ruff.lint]
+# Relax rules for FreeCAD workbench code
+ignore = [
+    "E402",  # Module level import not at top of file (FreeCAD requires conditional imports)
+    "E722",  # Do not use bare except (FreeCAD error handling)
+    "F401",  # Imported but unused (FreeCAD uses some imports at runtime)
+    "F821",  # Undefined name (FreeCAD modules available at runtime)
+]
+
+[tool.ruff.lint.per-file-ignores]
+# Workbench files run inside FreeCAD environment
+"workbench/*.py" = ["E402", "F401", "F821"]
+"workbench/**/*.py" = ["E402", "F401", "F821"]
