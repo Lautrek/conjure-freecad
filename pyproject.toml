@@ -42,6 +42,8 @@ build-backend = "hatchling.build"
 packages = ["src", "workbench"]
 
 [tool.ruff]
+target-version = "py310"
+line-length = 120
 # FreeCAD modules are available at runtime
 builtins = ["FreeCAD", "FreeCADGui", "Part", "Draft", "Sketcher", "PartDesign"]
 
