@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
+<package format="1">
+    <name>FreeCAD MCP</name>
+    <description>FreeCAD Model Control Protocol - Connect FreeCAD to Claude via MCP</description>
+    <version>0.1.0</version>
+    <maintainer email="your.email@example.com">Your Name</maintainer>
+    <license>MIT</license>
+    <url type="repository">https://github.com/yourusername/freecad-mcp</url>
+
+    <content>
+        <workbench>
+            <classname>ConjureWorkbench</classname>
+            <subdirectory>./</subdirectory>
+            <icon>assets/conjure_icon.svg</icon>
+            <depend>FreeCAD</depend>
+        </workbench>
+    </content>
+
+</package>

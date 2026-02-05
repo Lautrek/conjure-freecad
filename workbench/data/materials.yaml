@@ -1,0 +1,647 @@
+# 3D Printing Materials - Properties and Design Guidelines
+# All dimensions in millimeters, temperatures in Celsius
+#
+# Key formulas:
+#   shrinkage_compensation = 1 / (1 - shrinkage_percent/100)
+#   wall_thickness_min = nozzle_diameter * 2
+#   infill_strength = base_strength * (infill_percent/100)^1.5
+#
+# Design tolerances account for:
+#   - Material shrinkage during cooling
+#   - Printer accuracy (typically ±0.1-0.2mm)
+#   - Layer adhesion characteristics
+
+formulas:
+  shrinkage_compensation:
+    description: "Scale factor to compensate for material shrinkage"
+    formula: "scale = 1 / (1 - shrinkage_percent/100)"
+    example: "For 0.5% shrinkage: scale = 1 / (1 - 0.005) = 1.005"
+
+  hole_compensation:
+    description: "Holes print smaller due to plastic flow - enlarge by this amount"
+    formula: "actual_diameter = designed_diameter + compensation"
+    typical_values:
+      small_holes: 0.4  # < 10mm diameter
+      medium_holes: 0.3  # 10-25mm diameter
+      large_holes: 0.2  # > 25mm diameter
+
+  clearance_fit:
+    description: "Gap between mating parts for easy assembly"
+    formula: "gap = base_clearance + (dimension * tolerance_factor)"
+    typical_values:
+      loose_fit: 0.4
+      normal_fit: 0.2
+      tight_fit: 0.1
+
+  press_fit:
+    description: "Interference for press-fit assemblies"
+    formula: "interference = base_interference * (1 + dimension/100)"
+    typical_values:
+      light_press: -0.1
+      medium_press: -0.15
+      heavy_press: -0.2
+
+materials:
+  # ============================================================
+  # PLA (Polylactic Acid) - Most common, easiest to print
+  # ============================================================
+
+  pla_standard:
+    type: filament
+    name: "PLA Standard"
+    category: pla
+    print_temp_min_c: 190
+    print_temp_max_c: 220
+    print_temp_optimal_c: 205
+    bed_temp_min_c: 0
+    bed_temp_max_c: 60
+    bed_temp_optimal_c: 50
+    heated_bed_required: false
+    enclosure_required: false
+
+    shrinkage_percent: 0.3
+    shrinkage_compensation_factor: 1.003
+
+    mechanical_properties:
+      tensile_strength_mpa: 50
+      flexural_strength_mpa: 80
+      impact_resistance: low
+      heat_deflection_temp_c: 55
+      max_service_temp_c: 50
+      layer_adhesion: excellent
+      brittleness: moderate
+
+    design_guidelines:
+      min_wall_thickness_mm: 1.2
+      recommended_wall_thickness_mm: 2.0
+      min_layer_height_mm: 0.1
+      max_layer_height_mm: 0.32
+      optimal_layer_height_mm: 0.2
+      hole_compensation_mm: 0.4
+      clearance_fit_mm: 0.2
+      press_fit_mm: -0.1
+      max_overhang_angle_deg: 45
+      max_bridge_length_mm: 10
+      min_feature_size_mm: 0.4
+
+    post_processing:
+      sandable: true
+      paintable: true
+      glueable: true
+      acetone_smoothable: false
+      annealing_possible: true
+      annealing_temp_c: 80
+
+    description: "Standard PLA - Easy to print, biodegradable, good detail"
+    use_cases:
+      - "Prototypes and models"
+      - "Decorative items"
+      - "Low-stress mechanical parts"
+      - "Educational projects"
+    limitations:
+      - "Low heat resistance"
+      - "Brittle under impact"
+      - "Not suitable for outdoor use"
+      - "Degrades with UV exposure"
+
+  pla_plus:
+    type: filament
+    name: "PLA+ / PLA Pro"
+    category: pla
+    print_temp_min_c: 200
+    print_temp_max_c: 230
+    print_temp_optimal_c: 215
+    bed_temp_min_c: 0
+    bed_temp_max_c: 70
+    bed_temp_optimal_c: 60
+    heated_bed_required: false
+    enclosure_required: false
+
+    shrinkage_percent: 0.4
+    shrinkage_compensation_factor: 1.004
+
+    mechanical_properties:
+      tensile_strength_mpa: 60
+      flexural_strength_mpa: 95
+      impact_resistance: moderate
+      heat_deflection_temp_c: 60
+      max_service_temp_c: 55
+      layer_adhesion: excellent
+      brittleness: low
+
+    design_guidelines:
+      min_wall_thickness_mm: 1.2
+      recommended_wall_thickness_mm: 1.6
+      min_layer_height_mm: 0.1
+      max_layer_height_mm: 0.32
+      optimal_layer_height_mm: 0.2
+      hole_compensation_mm: 0.35
+      clearance_fit_mm: 0.2
+      press_fit_mm: -0.12
+      max_overhang_angle_deg: 50
+      max_bridge_length_mm: 15
+      min_feature_size_mm: 0.4
+
+    post_processing:
+      sandable: true
+      paintable: true
+      glueable: true
+      acetone_smoothable: false
+      annealing_possible: true
+      annealing_temp_c: 85
+
+    description: "Enhanced PLA with improved toughness and layer adhesion"
+    use_cases:
+      - "Functional prototypes"
+      - "Mechanical parts with moderate stress"
+      - "Snap-fit assemblies"
+      - "Living hinges"
+    limitations:
+      - "Slightly higher cost than standard PLA"
+      - "Still limited heat resistance"
+
+  # ============================================================
+  # PETG (Polyethylene Terephthalate Glycol) - Strong and flexible
+  # ============================================================
+
+  petg_standard:
+    type: filament
+    name: "PETG Standard"
+    category: petg
+    print_temp_min_c: 220
+    print_temp_max_c: 250
+    print_temp_optimal_c: 235
+    bed_temp_min_c: 70
+    bed_temp_max_c: 90
+    bed_temp_optimal_c: 80
+    heated_bed_required: true
+    enclosure_required: false
+
+    shrinkage_percent: 0.4
+    shrinkage_compensation_factor: 1.004
+
+    mechanical_properties:
+      tensile_strength_mpa: 53
+      flexural_strength_mpa: 77
+      impact_resistance: high
+      heat_deflection_temp_c: 70
+      max_service_temp_c: 65
+      layer_adhesion: excellent
+      brittleness: very_low
+
+    design_guidelines:
+      min_wall_thickness_mm: 1.2
+      recommended_wall_thickness_mm: 1.6
+      min_layer_height_mm: 0.12
+      max_layer_height_mm: 0.32
+      optimal_layer_height_mm: 0.2
+      hole_compensation_mm: 0.45
+      clearance_fit_mm: 0.25
+      press_fit_mm: -0.15
+      max_overhang_angle_deg: 40
+      max_bridge_length_mm: 8
+      min_feature_size_mm: 0.5
+
+    post_processing:
+      sandable: true
+      paintable: true
+      glueable: true
+      acetone_smoothable: false
+      annealing_possible: false
+      annealing_temp_c: null
+
+    description: "PETG - Excellent balance of strength, flexibility, and ease of printing"
+    use_cases:
+      - "Functional parts"
+      - "Outdoor applications"
+      - "Food-safe containers (check certification)"
+      - "Mechanical components"
+      - "Phone cases and protective gear"
+    limitations:
+      - "Stringing can be an issue"
+      - "Scratches more easily than PLA"
+      - "Requires higher bed temperature"
+
+  # ============================================================
+  # ABS (Acrylonitrile Butadiene Styrene) - Industrial strength
+  # ============================================================
+
+  abs_standard:
+    type: filament
+    name: "ABS Standard"
+    category: abs
+    print_temp_min_c: 230
+    print_temp_max_c: 260
+    print_temp_optimal_c: 245
+    bed_temp_min_c: 90
+    bed_temp_max_c: 110
+    bed_temp_optimal_c: 100
+    heated_bed_required: true
+    enclosure_required: true
+
+    shrinkage_percent: 0.8
+    shrinkage_compensation_factor: 1.008
+
+    mechanical_properties:
+      tensile_strength_mpa: 40
+      flexural_strength_mpa: 72
+      impact_resistance: very_high
+      heat_deflection_temp_c: 100
+      max_service_temp_c: 90
+      layer_adhesion: good
+      brittleness: very_low
+
+    design_guidelines:
+      min_wall_thickness_mm: 1.5
+      recommended_wall_thickness_mm: 2.0
+      min_layer_height_mm: 0.15
+      max_layer_height_mm: 0.32
+      optimal_layer_height_mm: 0.24
+      hole_compensation_mm: 0.5
+      clearance_fit_mm: 0.3
+      press_fit_mm: -0.2
+      max_overhang_angle_deg: 40
+      max_bridge_length_mm: 6
+      min_feature_size_mm: 0.6
+
+    post_processing:
+      sandable: true
+      paintable: true
+      glueable: true
+      acetone_smoothable: true
+      annealing_possible: true
+      annealing_temp_c: 100
+
+    description: "ABS - High heat and impact resistance, industrial standard"
+    use_cases:
+      - "Automotive parts"
+      - "Electronic enclosures"
+      - "High-temperature applications"
+      - "Parts requiring post-processing"
+      - "LEGO-compatible parts"
+    limitations:
+      - "Warping prone - requires enclosure"
+      - "Emits fumes - ventilation needed"
+      - "Higher print difficulty"
+      - "Significant shrinkage"
+
+  # ============================================================
+  # ASA (Acrylonitrile Styrene Acrylate) - UV resistant ABS
+  # ============================================================
+
+  asa_standard:
+    type: filament
+    name: "ASA Standard"
+    category: asa
+    print_temp_min_c: 235
+    print_temp_max_c: 260
+    print_temp_optimal_c: 250
+    bed_temp_min_c: 90
+    bed_temp_max_c: 110
+    bed_temp_optimal_c: 100
+    heated_bed_required: true
+    enclosure_required: true
+
+    shrinkage_percent: 0.7
+    shrinkage_compensation_factor: 1.007
+
+    mechanical_properties:
+      tensile_strength_mpa: 45
+      flexural_strength_mpa: 76
+      impact_resistance: very_high
+      heat_deflection_temp_c: 98
+      max_service_temp_c: 85
+      layer_adhesion: good
+      brittleness: very_low
+
+    design_guidelines:
+      min_wall_thickness_mm: 1.5
+      recommended_wall_thickness_mm: 2.0
+      min_layer_height_mm: 0.15
+      max_layer_height_mm: 0.32
+      optimal_layer_height_mm: 0.24
+      hole_compensation_mm: 0.45
+      clearance_fit_mm: 0.3
+      press_fit_mm: -0.18
+      max_overhang_angle_deg: 40
+      max_bridge_length_mm: 6
+      min_feature_size_mm: 0.6
+
+    post_processing:
+      sandable: true
+      paintable: true
+      glueable: true
+      acetone_smoothable: true
+      annealing_possible: true
+      annealing_temp_c: 95
+
+    description: "ASA - UV-resistant alternative to ABS for outdoor use"
+    use_cases:
+      - "Outdoor enclosures"
+      - "Garden fixtures"
+      - "Automotive exterior parts"
+      - "Signage and displays"
+    limitations:
+      - "Similar printing challenges to ABS"
+      - "Requires enclosure"
+      - "Emits fumes"
+
+  # ============================================================
+  # TPU (Thermoplastic Polyurethane) - Flexible
+  # ============================================================
+
+  tpu_95a:
+    type: filament
+    name: "TPU 95A"
+    category: tpu
+    shore_hardness: 95A
+    print_temp_min_c: 210
+    print_temp_max_c: 240
+    print_temp_optimal_c: 225
+    bed_temp_min_c: 40
+    bed_temp_max_c: 60
+    bed_temp_optimal_c: 50
+    heated_bed_required: false
+    enclosure_required: false
+
+    shrinkage_percent: 0.5
+    shrinkage_compensation_factor: 1.005
+
+    mechanical_properties:
+      tensile_strength_mpa: 35
+      elongation_at_break_percent: 450
+      impact_resistance: excellent
+      heat_deflection_temp_c: 60
+      max_service_temp_c: 80
+      layer_adhesion: excellent
+      flexibility: high
+
+    design_guidelines:
+      min_wall_thickness_mm: 1.0
+      recommended_wall_thickness_mm: 1.5
+      min_layer_height_mm: 0.15
+      max_layer_height_mm: 0.28
+      optimal_layer_height_mm: 0.2
+      hole_compensation_mm: 0.3
+      clearance_fit_mm: 0.15
+      press_fit_mm: -0.05
+      max_overhang_angle_deg: 35
+      max_bridge_length_mm: 5
+      min_feature_size_mm: 0.8
+      max_print_speed_mm_s: 30
+      retraction_enabled: false
+
+    post_processing:
+      sandable: false
+      paintable: true
+      glueable: true
+      acetone_smoothable: false
+      annealing_possible: false
+      annealing_temp_c: null
+
+    description: "TPU 95A - Flexible, rubber-like material for functional parts"
+    use_cases:
+      - "Phone cases"
+      - "Gaskets and seals"
+      - "Vibration dampeners"
+      - "Wearables"
+      - "Flexible hinges"
+      - "Grip surfaces"
+    limitations:
+      - "Slow print speeds required"
+      - "Difficult with Bowden extruders"
+      - "Stringing common"
+
+  # ============================================================
+  # NYLON (Polyamide) - Strong and wear-resistant
+  # ============================================================
+
+  nylon_pa6:
+    type: filament
+    name: "Nylon PA6"
+    category: nylon
+    print_temp_min_c: 250
+    print_temp_max_c: 280
+    print_temp_optimal_c: 265
+    bed_temp_min_c: 70
+    bed_temp_max_c: 90
+    bed_temp_optimal_c: 80
+    heated_bed_required: true
+    enclosure_required: true
+
+    shrinkage_percent: 1.5
+    shrinkage_compensation_factor: 1.015
+    hygroscopic: true
+    moisture_absorption_percent: 9.0
+
+    mechanical_properties:
+      tensile_strength_mpa: 70
+      flexural_strength_mpa: 100
+      impact_resistance: excellent
+      heat_deflection_temp_c: 180
+      max_service_temp_c: 120
+      layer_adhesion: excellent
+      wear_resistance: excellent
+
+    design_guidelines:
+      min_wall_thickness_mm: 1.5
+      recommended_wall_thickness_mm: 2.5
+      min_layer_height_mm: 0.15
+      max_layer_height_mm: 0.3
+      optimal_layer_height_mm: 0.2
+      hole_compensation_mm: 0.6
+      clearance_fit_mm: 0.35
+      press_fit_mm: -0.25
+      max_overhang_angle_deg: 35
+      max_bridge_length_mm: 5
+      min_feature_size_mm: 0.8
+
+    post_processing:
+      sandable: true
+      paintable: true
+      glueable: true
+      acetone_smoothable: false
+      annealing_possible: true
+      annealing_temp_c: 140
+      dyeable: true
+
+    description: "Nylon PA6 - Industrial-strength with excellent wear resistance"
+    use_cases:
+      - "Gears and bearings"
+      - "Hinges and living hinges"
+      - "Industrial tooling"
+      - "Functional mechanical parts"
+    limitations:
+      - "Must be dried before printing"
+      - "High warping tendency"
+      - "Requires enclosure"
+      - "Significant shrinkage"
+
+  # ============================================================
+  # PC (Polycarbonate) - High strength and temperature
+  # ============================================================
+
+  polycarbonate_standard:
+    type: filament
+    name: "Polycarbonate"
+    category: pc
+    print_temp_min_c: 270
+    print_temp_max_c: 310
+    print_temp_optimal_c: 290
+    bed_temp_min_c: 100
+    bed_temp_max_c: 130
+    bed_temp_optimal_c: 115
+    heated_bed_required: true
+    enclosure_required: true
+    chamber_temp_min_c: 50
+
+    shrinkage_percent: 0.7
+    shrinkage_compensation_factor: 1.007
+    hygroscopic: true
+    moisture_absorption_percent: 0.3
+
+    mechanical_properties:
+      tensile_strength_mpa: 65
+      flexural_strength_mpa: 93
+      impact_resistance: exceptional
+      heat_deflection_temp_c: 140
+      max_service_temp_c: 130
+      layer_adhesion: good
+      transparency: high
+
+    design_guidelines:
+      min_wall_thickness_mm: 2.0
+      recommended_wall_thickness_mm: 3.0
+      min_layer_height_mm: 0.2
+      max_layer_height_mm: 0.32
+      optimal_layer_height_mm: 0.24
+      hole_compensation_mm: 0.5
+      clearance_fit_mm: 0.35
+      press_fit_mm: -0.2
+      max_overhang_angle_deg: 35
+      max_bridge_length_mm: 4
+      min_feature_size_mm: 0.8
+
+    post_processing:
+      sandable: true
+      paintable: true
+      glueable: true
+      acetone_smoothable: false
+      annealing_possible: true
+      annealing_temp_c: 135
+
+    description: "Polycarbonate - Exceptional strength, heat resistance, and clarity"
+    use_cases:
+      - "Transparent enclosures"
+      - "High-temperature applications"
+      - "Safety equipment"
+      - "Electrical insulators"
+    limitations:
+      - "Requires high-temp printer"
+      - "Warping prone"
+      - "Moisture sensitive"
+      - "Difficult to print"
+
+  # ============================================================
+  # CARBON FIBER COMPOSITES
+  # ============================================================
+
+  petg_cf:
+    type: filament
+    name: "PETG Carbon Fiber"
+    category: composite
+    base_material: petg
+    reinforcement: carbon_fiber
+    reinforcement_percent: 15
+    print_temp_min_c: 230
+    print_temp_max_c: 260
+    print_temp_optimal_c: 245
+    bed_temp_min_c: 70
+    bed_temp_max_c: 90
+    bed_temp_optimal_c: 80
+    heated_bed_required: true
+    enclosure_required: false
+    hardened_nozzle_required: true
+
+    shrinkage_percent: 0.3
+    shrinkage_compensation_factor: 1.003
+
+    mechanical_properties:
+      tensile_strength_mpa: 70
+      flexural_strength_mpa: 100
+      stiffness_multiplier: 2.5
+      impact_resistance: moderate
+      heat_deflection_temp_c: 75
+      max_service_temp_c: 70
+      layer_adhesion: good
+
+    design_guidelines:
+      min_wall_thickness_mm: 1.5
+      recommended_wall_thickness_mm: 2.0
+      min_layer_height_mm: 0.15
+      max_layer_height_mm: 0.32
+      optimal_layer_height_mm: 0.2
+      hole_compensation_mm: 0.4
+      clearance_fit_mm: 0.25
+      press_fit_mm: -0.15
+      max_overhang_angle_deg: 40
+      max_bridge_length_mm: 8
+      min_feature_size_mm: 0.6
+
+    post_processing:
+      sandable: true
+      paintable: true
+      glueable: true
+      acetone_smoothable: false
+      annealing_possible: false
+      annealing_temp_c: null
+
+    description: "PETG with carbon fiber - Increased stiffness and reduced weight"
+    use_cases:
+      - "Drone frames"
+      - "RC car parts"
+      - "Camera mounts"
+      - "Structural brackets"
+    limitations:
+      - "Abrasive - wears brass nozzles"
+      - "Reduced impact resistance"
+      - "Anisotropic strength"
+
+  # ============================================================
+  # SPECIALTY MATERIALS
+  # ============================================================
+
+  pva_support:
+    type: filament
+    name: "PVA Water Soluble"
+    category: support
+    soluble_in: water
+    print_temp_min_c: 185
+    print_temp_max_c: 210
+    print_temp_optimal_c: 195
+    bed_temp_min_c: 45
+    bed_temp_max_c: 60
+    bed_temp_optimal_c: 55
+    heated_bed_required: false
+    enclosure_required: false
+    hygroscopic: true
+    moisture_absorption_percent: 20.0
+
+    dissolution_time_hours: 4
+    dissolution_temp_c: 25
+
+    design_guidelines:
+      interface_layers: 2
+      support_density_percent: 20
+      z_distance_mm: 0.2
+
+    description: "PVA - Water-soluble support material for complex geometries"
+    use_cases:
+      - "Dual-extrusion support"
+      - "Complex internal cavities"
+      - "Parts with overhangs"
+    limitations:
+      - "Extremely moisture sensitive"
+      - "Short shelf life once opened"
+      - "Requires dual extruder"
+      - "Expensive"

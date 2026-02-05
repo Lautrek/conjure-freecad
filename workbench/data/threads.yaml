@@ -1,0 +1,626 @@
+# Thread Specifications - Metric ISO and Imperial Standards
+# All dimensions in millimeters unless otherwise noted
+#
+# Key formulas (ISO Metric):
+#   pitch (P) = distance between threads
+#   major_diameter (D) = nominal thread size
+#   minor_diameter (d) = D - 1.0825 * P
+#   pitch_diameter (d2) = D - 0.6495 * P
+#   thread_height (H) = 0.866025 * P
+#   tap_drill = D - P (approximate, for ~75% thread)
+#   clearance_hole = D + 0.5 (standard fit)
+#
+# Thread engagement (minimum):
+#   steel in steel: 1.0 * D
+#   steel in aluminum: 1.5 * D
+#   steel in plastic: 2.0 * D
+
+formulas:
+  iso_metric:
+    description: "ISO metric thread geometry formulas"
+    thread_height:
+      formula: "H = P * sqrt(3) / 2 = P * 0.866025"
+    minor_diameter:
+      formula: "d = D - 2 * (5/8) * H = D - 1.0825 * P"
+    pitch_diameter:
+      formula: "d2 = D - 2 * (3/8) * H = D - 0.6495 * P"
+    tap_drill_75_percent:
+      formula: "d_tap = D - P"
+      description: "Tap drill for approximately 75% thread engagement"
+    tap_drill_50_percent:
+      formula: "d_tap = D - 0.65 * P"
+      description: "Tap drill for approximately 50% thread engagement"
+
+  thread_engagement:
+    description: "Minimum thread engagement depth for full strength"
+    formulas:
+      steel_steel: "L = 1.0 * D"
+      steel_aluminum: "L = 1.5 * D"
+      steel_brass: "L = 1.5 * D"
+      steel_cast_iron: "L = 1.5 * D"
+      steel_plastic: "L = 2.0 * D"
+      steel_3d_print: "L = 2.5 * D"
+
+  thread_tolerances:
+    description: "ISO thread tolerance classes"
+    classes:
+      6H: "Standard internal thread (nut)"
+      6g: "Standard external thread (bolt)"
+      6G: "Loose internal thread"
+      4h: "Precision external thread"
+
+threads:
+  # ============================================================
+  # METRIC COARSE (ISO 262) - Standard metric threads
+  # ============================================================
+
+  M2_coarse:
+    type: metric_coarse
+    standard: ISO_262
+    designation: "M2"
+    nominal_diameter_mm: 2.0
+    pitch_mm: 0.4
+    major_diameter_mm: 2.0
+    minor_diameter_mm: 1.567
+    pitch_diameter_mm: 1.740
+    thread_height_mm: 0.346
+    tap_drill_75_mm: 1.6
+    tap_drill_50_mm: 1.74
+    clearance_hole_close_mm: 2.2
+    clearance_hole_medium_mm: 2.4
+    clearance_hole_free_mm: 2.6
+    thread_angle_deg: 60
+    description: "M2 x 0.4 coarse thread"
+    engagement_depth:
+      steel_mm: 2.0
+      aluminum_mm: 3.0
+      plastic_mm: 4.0
+    use_cases:
+      - "Electronics"
+      - "Small instruments"
+      - "Watches"
+
+  M2.5_coarse:
+    type: metric_coarse
+    standard: ISO_262
+    designation: "M2.5"
+    nominal_diameter_mm: 2.5
+    pitch_mm: 0.45
+    major_diameter_mm: 2.5
+    minor_diameter_mm: 2.013
+    pitch_diameter_mm: 2.208
+    thread_height_mm: 0.390
+    tap_drill_75_mm: 2.05
+    tap_drill_50_mm: 2.21
+    clearance_hole_close_mm: 2.7
+    clearance_hole_medium_mm: 2.9
+    clearance_hole_free_mm: 3.1
+    thread_angle_deg: 60
+    description: "M2.5 x 0.45 coarse thread"
+    engagement_depth:
+      steel_mm: 2.5
+      aluminum_mm: 3.75
+      plastic_mm: 5.0
+    use_cases:
+      - "Electronics"
+      - "Camera equipment"
+      - "Laptops"
+
+  M3_coarse:
+    type: metric_coarse
+    standard: ISO_262
+    designation: "M3"
+    nominal_diameter_mm: 3.0
+    pitch_mm: 0.5
+    major_diameter_mm: 3.0
+    minor_diameter_mm: 2.459
+    pitch_diameter_mm: 2.675
+    thread_height_mm: 0.433
+    tap_drill_75_mm: 2.5
+    tap_drill_50_mm: 2.68
+    clearance_hole_close_mm: 3.2
+    clearance_hole_medium_mm: 3.4
+    clearance_hole_free_mm: 3.6
+    thread_angle_deg: 60
+    description: "M3 x 0.5 coarse thread"
+    engagement_depth:
+      steel_mm: 3.0
+      aluminum_mm: 4.5
+      plastic_mm: 6.0
+    use_cases:
+      - "Electronics enclosures"
+      - "3D printer parts"
+      - "Small mechanisms"
+
+  M4_coarse:
+    type: metric_coarse
+    standard: ISO_262
+    designation: "M4"
+    nominal_diameter_mm: 4.0
+    pitch_mm: 0.7
+    major_diameter_mm: 4.0
+    minor_diameter_mm: 3.242
+    pitch_diameter_mm: 3.545
+    thread_height_mm: 0.606
+    tap_drill_75_mm: 3.3
+    tap_drill_50_mm: 3.55
+    clearance_hole_close_mm: 4.3
+    clearance_hole_medium_mm: 4.5
+    clearance_hole_free_mm: 4.8
+    thread_angle_deg: 60
+    description: "M4 x 0.7 coarse thread"
+    engagement_depth:
+      steel_mm: 4.0
+      aluminum_mm: 6.0
+      plastic_mm: 8.0
+    use_cases:
+      - "General mechanical"
+      - "Consumer electronics"
+      - "Automotive sensors"
+
+  M5_coarse:
+    type: metric_coarse
+    standard: ISO_262
+    designation: "M5"
+    nominal_diameter_mm: 5.0
+    pitch_mm: 0.8
+    major_diameter_mm: 5.0
+    minor_diameter_mm: 4.134
+    pitch_diameter_mm: 4.480
+    thread_height_mm: 0.693
+    tap_drill_75_mm: 4.2
+    tap_drill_50_mm: 4.48
+    clearance_hole_close_mm: 5.3
+    clearance_hole_medium_mm: 5.5
+    clearance_hole_free_mm: 5.8
+    thread_angle_deg: 60
+    description: "M5 x 0.8 coarse thread"
+    engagement_depth:
+      steel_mm: 5.0
+      aluminum_mm: 7.5
+      plastic_mm: 10.0
+    use_cases:
+      - "Furniture (IKEA standard)"
+      - "Bicycles"
+      - "Consumer products"
+
+  M6_coarse:
+    type: metric_coarse
+    standard: ISO_262
+    designation: "M6"
+    nominal_diameter_mm: 6.0
+    pitch_mm: 1.0
+    major_diameter_mm: 6.0
+    minor_diameter_mm: 4.917
+    pitch_diameter_mm: 5.350
+    thread_height_mm: 0.866
+    tap_drill_75_mm: 5.0
+    tap_drill_50_mm: 5.35
+    clearance_hole_close_mm: 6.4
+    clearance_hole_medium_mm: 6.6
+    clearance_hole_free_mm: 7.0
+    thread_angle_deg: 60
+    description: "M6 x 1.0 coarse thread"
+    engagement_depth:
+      steel_mm: 6.0
+      aluminum_mm: 9.0
+      plastic_mm: 12.0
+    use_cases:
+      - "Structural assemblies"
+      - "Machine frames"
+      - "General purpose"
+
+  M8_coarse:
+    type: metric_coarse
+    standard: ISO_262
+    designation: "M8"
+    nominal_diameter_mm: 8.0
+    pitch_mm: 1.25
+    major_diameter_mm: 8.0
+    minor_diameter_mm: 6.647
+    pitch_diameter_mm: 7.188
+    thread_height_mm: 1.083
+    tap_drill_75_mm: 6.8
+    tap_drill_50_mm: 7.19
+    clearance_hole_close_mm: 8.4
+    clearance_hole_medium_mm: 9.0
+    clearance_hole_free_mm: 10.0
+    thread_angle_deg: 60
+    description: "M8 x 1.25 coarse thread"
+    engagement_depth:
+      steel_mm: 8.0
+      aluminum_mm: 12.0
+      plastic_mm: 16.0
+    use_cases:
+      - "Heavy machinery"
+      - "Automotive"
+      - "Industrial"
+
+  M10_coarse:
+    type: metric_coarse
+    standard: ISO_262
+    designation: "M10"
+    nominal_diameter_mm: 10.0
+    pitch_mm: 1.5
+    major_diameter_mm: 10.0
+    minor_diameter_mm: 8.376
+    pitch_diameter_mm: 9.026
+    thread_height_mm: 1.299
+    tap_drill_75_mm: 8.5
+    tap_drill_50_mm: 9.03
+    clearance_hole_close_mm: 10.5
+    clearance_hole_medium_mm: 11.0
+    clearance_hole_free_mm: 12.0
+    thread_angle_deg: 60
+    description: "M10 x 1.5 coarse thread"
+    engagement_depth:
+      steel_mm: 10.0
+      aluminum_mm: 15.0
+      plastic_mm: 20.0
+    use_cases:
+      - "Industrial equipment"
+      - "Construction"
+      - "Heavy-duty"
+
+  M12_coarse:
+    type: metric_coarse
+    standard: ISO_262
+    designation: "M12"
+    nominal_diameter_mm: 12.0
+    pitch_mm: 1.75
+    major_diameter_mm: 12.0
+    minor_diameter_mm: 10.106
+    pitch_diameter_mm: 10.863
+    thread_height_mm: 1.516
+    tap_drill_75_mm: 10.2
+    tap_drill_50_mm: 10.86
+    clearance_hole_close_mm: 13.0
+    clearance_hole_medium_mm: 14.0
+    clearance_hole_free_mm: 15.0
+    thread_angle_deg: 60
+    description: "M12 x 1.75 coarse thread"
+    engagement_depth:
+      steel_mm: 12.0
+      aluminum_mm: 18.0
+      plastic_mm: 24.0
+    use_cases:
+      - "Structural steel"
+      - "Heavy equipment"
+      - "Construction"
+
+  M14_coarse:
+    type: metric_coarse
+    standard: ISO_262
+    designation: "M14"
+    nominal_diameter_mm: 14.0
+    pitch_mm: 2.0
+    major_diameter_mm: 14.0
+    minor_diameter_mm: 11.835
+    pitch_diameter_mm: 12.701
+    thread_height_mm: 1.732
+    tap_drill_75_mm: 12.0
+    tap_drill_50_mm: 12.7
+    clearance_hole_close_mm: 15.0
+    clearance_hole_medium_mm: 15.5
+    clearance_hole_free_mm: 17.0
+    thread_angle_deg: 60
+    description: "M14 x 2.0 coarse thread"
+    engagement_depth:
+      steel_mm: 14.0
+      aluminum_mm: 21.0
+      plastic_mm: 28.0
+    use_cases:
+      - "Automotive suspension"
+      - "Heavy machinery"
+      - "Industrial"
+
+  M16_coarse:
+    type: metric_coarse
+    standard: ISO_262
+    designation: "M16"
+    nominal_diameter_mm: 16.0
+    pitch_mm: 2.0
+    major_diameter_mm: 16.0
+    minor_diameter_mm: 13.835
+    pitch_diameter_mm: 14.701
+    thread_height_mm: 1.732
+    tap_drill_75_mm: 14.0
+    tap_drill_50_mm: 14.7
+    clearance_hole_close_mm: 17.0
+    clearance_hole_medium_mm: 17.5
+    clearance_hole_free_mm: 18.0
+    thread_angle_deg: 60
+    description: "M16 x 2.0 coarse thread"
+    engagement_depth:
+      steel_mm: 16.0
+      aluminum_mm: 24.0
+      plastic_mm: 32.0
+    use_cases:
+      - "Structural connections"
+      - "Bridge construction"
+      - "Heavy industry"
+
+  M20_coarse:
+    type: metric_coarse
+    standard: ISO_262
+    designation: "M20"
+    nominal_diameter_mm: 20.0
+    pitch_mm: 2.5
+    major_diameter_mm: 20.0
+    minor_diameter_mm: 17.294
+    pitch_diameter_mm: 18.376
+    thread_height_mm: 2.165
+    tap_drill_75_mm: 17.5
+    tap_drill_50_mm: 18.38
+    clearance_hole_close_mm: 21.0
+    clearance_hole_medium_mm: 22.0
+    clearance_hole_free_mm: 24.0
+    thread_angle_deg: 60
+    description: "M20 x 2.5 coarse thread"
+    engagement_depth:
+      steel_mm: 20.0
+      aluminum_mm: 30.0
+      plastic_mm: 40.0
+    use_cases:
+      - "Heavy structural"
+      - "Industrial machinery"
+      - "Infrastructure"
+
+  # ============================================================
+  # METRIC FINE - Higher precision, stronger for thin materials
+  # ============================================================
+
+  M6_fine:
+    type: metric_fine
+    standard: ISO_262
+    designation: "M6x0.75"
+    nominal_diameter_mm: 6.0
+    pitch_mm: 0.75
+    major_diameter_mm: 6.0
+    minor_diameter_mm: 5.188
+    pitch_diameter_mm: 5.513
+    thread_height_mm: 0.650
+    tap_drill_75_mm: 5.25
+    tap_drill_50_mm: 5.51
+    clearance_hole_close_mm: 6.4
+    clearance_hole_medium_mm: 6.6
+    clearance_hole_free_mm: 7.0
+    thread_angle_deg: 60
+    description: "M6 x 0.75 fine thread"
+    engagement_depth:
+      steel_mm: 6.0
+      aluminum_mm: 9.0
+      plastic_mm: 12.0
+    use_cases:
+      - "Precision instruments"
+      - "Thin-walled parts"
+      - "Vibration-prone applications"
+
+  M8_fine:
+    type: metric_fine
+    standard: ISO_262
+    designation: "M8x1.0"
+    nominal_diameter_mm: 8.0
+    pitch_mm: 1.0
+    major_diameter_mm: 8.0
+    minor_diameter_mm: 6.917
+    pitch_diameter_mm: 7.350
+    thread_height_mm: 0.866
+    tap_drill_75_mm: 7.0
+    tap_drill_50_mm: 7.35
+    clearance_hole_close_mm: 8.4
+    clearance_hole_medium_mm: 9.0
+    clearance_hole_free_mm: 10.0
+    thread_angle_deg: 60
+    description: "M8 x 1.0 fine thread"
+    engagement_depth:
+      steel_mm: 8.0
+      aluminum_mm: 12.0
+      plastic_mm: 16.0
+    use_cases:
+      - "Automotive sensors"
+      - "Hydraulic fittings"
+      - "Precision assemblies"
+
+  M10_fine:
+    type: metric_fine
+    standard: ISO_262
+    designation: "M10x1.0"
+    nominal_diameter_mm: 10.0
+    pitch_mm: 1.0
+    major_diameter_mm: 10.0
+    minor_diameter_mm: 8.917
+    pitch_diameter_mm: 9.350
+    thread_height_mm: 0.866
+    tap_drill_75_mm: 9.0
+    tap_drill_50_mm: 9.35
+    clearance_hole_close_mm: 10.5
+    clearance_hole_medium_mm: 11.0
+    clearance_hole_free_mm: 12.0
+    thread_angle_deg: 60
+    description: "M10 x 1.0 fine thread"
+    engagement_depth:
+      steel_mm: 10.0
+      aluminum_mm: 15.0
+      plastic_mm: 20.0
+    use_cases:
+      - "Precision machinery"
+      - "Thin tube fittings"
+      - "Anti-vibration"
+
+  M10_fine_125:
+    type: metric_fine
+    standard: ISO_262
+    designation: "M10x1.25"
+    nominal_diameter_mm: 10.0
+    pitch_mm: 1.25
+    major_diameter_mm: 10.0
+    minor_diameter_mm: 8.647
+    pitch_diameter_mm: 9.188
+    thread_height_mm: 1.083
+    tap_drill_75_mm: 8.75
+    tap_drill_50_mm: 9.19
+    clearance_hole_close_mm: 10.5
+    clearance_hole_medium_mm: 11.0
+    clearance_hole_free_mm: 12.0
+    thread_angle_deg: 60
+    description: "M10 x 1.25 fine thread"
+    engagement_depth:
+      steel_mm: 10.0
+      aluminum_mm: 15.0
+      plastic_mm: 20.0
+    use_cases:
+      - "Automotive spark plugs"
+      - "Precision instruments"
+
+  M12_fine:
+    type: metric_fine
+    standard: ISO_262
+    designation: "M12x1.25"
+    nominal_diameter_mm: 12.0
+    pitch_mm: 1.25
+    major_diameter_mm: 12.0
+    minor_diameter_mm: 10.647
+    pitch_diameter_mm: 11.188
+    thread_height_mm: 1.083
+    tap_drill_75_mm: 10.75
+    tap_drill_50_mm: 11.19
+    clearance_hole_close_mm: 13.0
+    clearance_hole_medium_mm: 14.0
+    clearance_hole_free_mm: 15.0
+    thread_angle_deg: 60
+    description: "M12 x 1.25 fine thread"
+    engagement_depth:
+      steel_mm: 12.0
+      aluminum_mm: 18.0
+      plastic_mm: 24.0
+    use_cases:
+      - "Precision machinery"
+      - "Thin-walled applications"
+
+  # ============================================================
+  # 3D PRINTING SPECIFIC THREAD GUIDELINES
+  # ============================================================
+
+  print_thread_guidelines:
+    type: guidelines
+    description: "Thread printing guidelines for FDM/FFF"
+
+    minimum_printable:
+      coarse_threads: "M6 and larger print reliably"
+      fine_threads: "M8 and larger print reliably"
+      note: "Smaller threads may work with resin printing"
+
+    design_compensation:
+      external_threads:
+        xy_compensation_mm: -0.2
+        description: "Reduce diameter to account for over-extrusion"
+      internal_threads:
+        xy_compensation_mm: 0.4
+        description: "Increase hole diameter for clearance"
+      pitch_compensation:
+        layer_alignment: "Match layer height to thread pitch fraction"
+        recommended_ratios: [0.5, 0.25, 0.2]
+
+    orientation:
+      preferred: "Threads vertical (along Z axis)"
+      horizontal_note: "Horizontal threads have reduced strength"
+      support_note: "Internal threads may need support"
+
+    post_processing:
+      thread_chasing: "Use tap/die to clean up printed threads"
+      heat_set_alternative: "Consider heat-set inserts for M3-M5"
+
+    strength_factors:
+      vertical_threads: 1.0
+      horizontal_threads: 0.4
+      layer_adhesion_critical: true
+
+  # ============================================================
+  # IMPERIAL THREADS (UNC - Unified Coarse)
+  # ============================================================
+
+  UNC_1_4_20:
+    type: imperial_unc
+    standard: ANSI_B1_1
+    designation: "1/4-20 UNC"
+    nominal_diameter_inch: 0.25
+    nominal_diameter_mm: 6.35
+    threads_per_inch: 20
+    pitch_mm: 1.27
+    major_diameter_mm: 6.35
+    minor_diameter_mm: 5.03
+    pitch_diameter_mm: 5.59
+    tap_drill_inch: 0.201
+    tap_drill_mm: 5.1
+    clearance_hole_close_mm: 6.6
+    clearance_hole_medium_mm: 7.0
+    thread_angle_deg: 60
+    description: "1/4-20 UNC (Unified National Coarse)"
+    use_cases:
+      - "American machinery"
+      - "Camera tripod mounts"
+      - "General hardware"
+
+  UNC_5_16_18:
+    type: imperial_unc
+    standard: ANSI_B1_1
+    designation: "5/16-18 UNC"
+    nominal_diameter_inch: 0.3125
+    nominal_diameter_mm: 7.94
+    threads_per_inch: 18
+    pitch_mm: 1.41
+    major_diameter_mm: 7.94
+    minor_diameter_mm: 6.35
+    pitch_diameter_mm: 7.04
+    tap_drill_inch: 0.2656
+    tap_drill_mm: 6.75
+    clearance_hole_close_mm: 8.2
+    clearance_hole_medium_mm: 8.6
+    thread_angle_deg: 60
+    description: "5/16-18 UNC (Unified National Coarse)"
+    use_cases:
+      - "American machinery"
+      - "Automotive"
+
+  UNC_3_8_16:
+    type: imperial_unc
+    standard: ANSI_B1_1
+    designation: "3/8-16 UNC"
+    nominal_diameter_inch: 0.375
+    nominal_diameter_mm: 9.525
+    threads_per_inch: 16
+    pitch_mm: 1.59
+    major_diameter_mm: 9.53
+    minor_diameter_mm: 7.62
+    pitch_diameter_mm: 8.46
+    tap_drill_inch: 0.3125
+    tap_drill_mm: 7.94
+    clearance_hole_close_mm: 10.0
+    clearance_hole_medium_mm: 10.5
+    thread_angle_deg: 60
+    description: "3/8-16 UNC (Unified National Coarse)"
+    use_cases:
+      - "American structural"
+      - "Large camera equipment"
+
+  UNC_1_2_13:
+    type: imperial_unc
+    standard: ANSI_B1_1
+    designation: "1/2-13 UNC"
+    nominal_diameter_inch: 0.5
+    nominal_diameter_mm: 12.7
+    threads_per_inch: 13
+    pitch_mm: 1.95
+    major_diameter_mm: 12.7
+    minor_diameter_mm: 10.36
+    pitch_diameter_mm: 11.41
+    tap_drill_inch: 0.4219
+    tap_drill_mm: 10.72
+    clearance_hole_close_mm: 13.5
+    clearance_hole_medium_mm: 14.0
+    thread_angle_deg: 60
+    description: "1/2-13 UNC (Unified National Coarse)"
+    use_cases:
+      - "American heavy machinery"
+      - "Structural connections"

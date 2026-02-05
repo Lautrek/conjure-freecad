@@ -1,0 +1,114 @@
+# Conjure FreeCAD Client CI
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+
+      - name: Setup Python 3.11
+        run: uv python install 3.11
+
+      - name: Install ruff
+        run: |
+          uv venv
+          uv pip install ruff
+
+      - name: Run ruff check
+        run: uv run ruff check workbench/ src/ --output-format=github
+
+      - name: Run ruff format check
+        run: uv run ruff format --check workbench/ src/
+
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    needs: lint
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build ZIP
+        run: |
+          ./build.sh
+          # CI expects consistent name for artifact upload
+          cp dist/*.zip dist/conjure_freecad_client_latest.zip
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: conjure-freecad-client
+          path: dist/*.zip
+
+  smoke-test:
+    name: Smoke Test Bundle
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: conjure-freecad-client
+          path: dist
+
+      - name: Unzip bundle
+        run: |
+          mkdir -p /tmp/bundle-test
+          unzip dist/conjure_freecad_client_latest.zip -d /tmp/bundle-test
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+
+      - name: Setup Python 3.11
+        run: uv python install 3.11
+
+      - name: Install minimal deps
+        run: |
+          uv venv
+          uv pip install mcp pydantic
+
+      - name: Verify bundle structure
+        run: |
+          test -f /tmp/bundle-test/conjure/InitGui.py
+          test -f /tmp/bundle-test/conjure/Init.py
+          test -f /tmp/bundle-test/conjure/conjure.py
+          echo "Bundle structure verified"
+
+  release:
+    name: Create GitHub Release
+    runs-on: ubuntu-latest
+    needs: [build, smoke-test]
+    permissions:
+      contents: write
+    if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: List artifacts
+        run: ls -R artifacts
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            artifacts/conjure-freecad-client/*.zip
+          tag_name: "v${{ github.run_number }}"
+          body: "Release v${{ github.run_number }}"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

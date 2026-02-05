@@ -1,0 +1,275 @@
+# Socket dimension standards for utility keys and hardware
+# All dimensions in millimeters
+#
+# Key formulas:
+#   inscribed_diameter = flat-to-flat distance
+#   circumscribed_diameter = point-to-point distance (vertex to vertex)
+#   For regular polygon: circumscribed = inscribed / cos(pi/n)
+
+sockets:
+  # ============================================================
+  # HEXAGONAL SOCKETS (6-sided) - Common for bolts and Allen keys
+  # ============================================================
+
+  hex_3mm:
+    type: hex
+    size_mm: 3.0
+    inscribed_diameter_mm: 3.0
+    circumscribed_diameter_mm: 3.46
+    depth_mm: 2.5
+    tolerance_mm: 0.08
+    description: "3mm hex socket (Allen key)"
+    use_cases:
+      - "M3 socket head cap screws"
+      - "Small electronics"
+      - "Hobby projects"
+
+  hex_4mm:
+    type: hex
+    size_mm: 4.0
+    inscribed_diameter_mm: 4.0
+    circumscribed_diameter_mm: 4.62
+    depth_mm: 3.0
+    tolerance_mm: 0.1
+    description: "4mm hex socket (Allen key)"
+    use_cases:
+      - "M4-M5 socket head cap screws"
+      - "Small electronics"
+      - "Camera equipment"
+
+  hex_5mm:
+    type: hex
+    size_mm: 5.0
+    inscribed_diameter_mm: 5.0
+    circumscribed_diameter_mm: 5.77
+    depth_mm: 4.0
+    tolerance_mm: 0.1
+    description: "5mm hex socket (Allen key)"
+    use_cases:
+      - "M5-M6 socket head cap screws"
+      - "Furniture assembly (IKEA)"
+      - "Bicycle components"
+
+  hex_6mm:
+    type: hex
+    size_mm: 6.0
+    inscribed_diameter_mm: 6.0
+    circumscribed_diameter_mm: 6.93
+    depth_mm: 5.0
+    tolerance_mm: 0.1
+    description: "6mm hex socket (Allen key)"
+    use_cases:
+      - "M8 socket head cap screws"
+      - "Bicycle components"
+      - "Furniture assembly"
+
+  hex_7mm:
+    type: hex
+    size_mm: 7.0
+    inscribed_diameter_mm: 7.0
+    circumscribed_diameter_mm: 8.08
+    depth_mm: 5.5
+    tolerance_mm: 0.12
+    description: "7mm hex socket"
+    use_cases:
+      - "Utility keys"
+      - "Service cabinet locks"
+
+  hex_8mm:
+    type: hex
+    size_mm: 8.0
+    inscribed_diameter_mm: 8.0
+    circumscribed_diameter_mm: 9.24
+    depth_mm: 6.0
+    tolerance_mm: 0.15
+    description: "8mm hex socket (Allen key)"
+    use_cases:
+      - "M10 socket head cap screws"
+      - "Utility keys"
+      - "Automotive applications"
+
+  hex_10mm:
+    type: hex
+    size_mm: 10.0
+    inscribed_diameter_mm: 10.0
+    circumscribed_diameter_mm: 11.55
+    depth_mm: 7.0
+    tolerance_mm: 0.15
+    description: "10mm hex socket"
+    use_cases:
+      - "M12 socket head cap screws"
+      - "Industrial equipment"
+
+  # ============================================================
+  # SQUARE SOCKETS (4-sided) - Common for utility/service keys
+  # ============================================================
+
+  square_5mm:
+    type: square
+    size_mm: 5.0
+    inscribed_diameter_mm: 5.0
+    circumscribed_diameter_mm: 7.07
+    depth_mm: 4.0
+    tolerance_mm: 0.1
+    description: "5mm square socket"
+    use_cases:
+      - "Small utility cabinet keys"
+      - "Electrical panel keys"
+
+  square_6mm:
+    type: square
+    size_mm: 6.0
+    inscribed_diameter_mm: 6.0
+    circumscribed_diameter_mm: 8.49
+    depth_mm: 5.0
+    tolerance_mm: 0.1
+    description: "6mm square socket"
+    use_cases:
+      - "Utility cabinet keys"
+      - "Gas meter keys"
+      - "Water valve keys"
+
+  square_7mm:
+    type: square
+    size_mm: 7.0
+    inscribed_diameter_mm: 7.0
+    circumscribed_diameter_mm: 9.90
+    depth_mm: 5.5
+    tolerance_mm: 0.12
+    description: "7mm square socket"
+    use_cases:
+      - "Standard utility keys"
+      - "Service panel access"
+
+  square_8mm:
+    type: square
+    size_mm: 8.0
+    inscribed_diameter_mm: 8.0
+    circumscribed_diameter_mm: 11.31
+    depth_mm: 6.0
+    tolerance_mm: 0.15
+    description: "8mm square socket"
+    use_cases:
+      - "Electrical panel keys"
+      - "Elevator keys"
+      - "Standard utility keys"
+      - "Train door keys"
+
+  square_10mm:
+    type: square
+    size_mm: 10.0
+    inscribed_diameter_mm: 10.0
+    circumscribed_diameter_mm: 14.14
+    depth_mm: 8.0
+    tolerance_mm: 0.15
+    description: "10mm square socket"
+    use_cases:
+      - "Large utility cabinets"
+      - "Industrial panels"
+      - "Commercial HVAC access"
+
+  square_12mm:
+    type: square
+    size_mm: 12.0
+    inscribed_diameter_mm: 12.0
+    circumscribed_diameter_mm: 16.97
+    depth_mm: 10.0
+    tolerance_mm: 0.2
+    description: "12mm square socket"
+    use_cases:
+      - "Heavy duty utility keys"
+      - "Industrial control panels"
+
+  # ============================================================
+  # TRIANGLE SOCKETS (3-sided) - Common for elevator/panel keys
+  # ============================================================
+
+  triangle_5mm:
+    type: triangle
+    size_mm: 5.0
+    inscribed_diameter_mm: 5.0
+    circumscribed_diameter_mm: 10.0
+    depth_mm: 4.0
+    tolerance_mm: 0.15
+    description: "5mm triangle socket"
+    use_cases:
+      - "Small panel access"
+      - "Electronic enclosures"
+
+  triangle_6mm:
+    type: triangle
+    size_mm: 6.0
+    inscribed_diameter_mm: 6.0
+    circumscribed_diameter_mm: 12.0
+    depth_mm: 5.0
+    tolerance_mm: 0.15
+    description: "6mm triangle socket"
+    use_cases:
+      - "Elevator control panels"
+      - "Fire alarm panels"
+      - "Security access panels"
+
+  triangle_7mm:
+    type: triangle
+    size_mm: 7.0
+    inscribed_diameter_mm: 7.0
+    circumscribed_diameter_mm: 14.0
+    depth_mm: 5.5
+    tolerance_mm: 0.15
+    description: "7mm triangle socket"
+    use_cases:
+      - "Elevator keys"
+      - "Building access panels"
+
+  triangle_8mm:
+    type: triangle
+    size_mm: 8.0
+    inscribed_diameter_mm: 8.0
+    circumscribed_diameter_mm: 16.0
+    depth_mm: 6.0
+    tolerance_mm: 0.15
+    description: "8mm triangle socket"
+    use_cases:
+      - "Utility cabinet keys"
+      - "Service access panels"
+      - "Public transit access"
+
+  triangle_10mm:
+    type: triangle
+    size_mm: 10.0
+    inscribed_diameter_mm: 10.0
+    circumscribed_diameter_mm: 20.0
+    depth_mm: 8.0
+    tolerance_mm: 0.2
+    description: "10mm triangle socket"
+    use_cases:
+      - "Large panel access"
+      - "Industrial elevator keys"
+
+  # ============================================================
+  # SLOTTED SOCKETS - For slot-head screws and some utility keys
+  # ============================================================
+
+  slot_10x3:
+    type: slotted
+    size_mm: 10.0
+    inscribed_diameter_mm: 3.0  # Slot height
+    circumscribed_diameter_mm: 10.0  # Slot width
+    depth_mm: 5.0
+    tolerance_mm: 0.15
+    description: "10mm x 3mm slot"
+    use_cases:
+      - "Utility key slot drives"
+      - "Service panel access"
+
+  slot_12x3:
+    type: slotted
+    size_mm: 12.0
+    inscribed_diameter_mm: 3.0
+    circumscribed_diameter_mm: 12.0
+    depth_mm: 5.0
+    tolerance_mm: 0.15
+    description: "12mm x 3mm slot"
+    use_cases:
+      - "Large slot drives"
+      - "Industrial panels"

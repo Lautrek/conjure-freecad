@@ -1,0 +1,707 @@
+# Gear Specifications Library
+# Involute gear tooth profiles following ISO 53/54 and AGMA standards
+#
+# Key concepts:
+# - Module (m): Fundamental sizing parameter. m = pitch_diameter / num_teeth
+# - Pressure angle: Standard is 20°, legacy is 14.5°
+# - For gears to mesh, they MUST have same module and pressure angle
+# - Pitch circle: Where teeth of meshing gears contact (theoretical)
+# - Base circle: Where involute profile starts
+# - Addendum: Tooth height above pitch circle = m
+# - Dedendum: Tooth depth below pitch circle = 1.25 * m
+#
+# Naming convention: {type}_m{module}_z{teeth}
+# Example: spur_m1_z20 = spur gear, module 1mm, 20 teeth
+
+formulas:
+  involute_geometry:
+    description: "Standard involute gear tooth geometry calculations"
+    pitch_diameter: "m * z"
+    base_diameter: "pitch_diameter * cos(pressure_angle)"
+    addendum: "m"
+    dedendum: "1.25 * m"
+    whole_depth: "2.25 * m"
+    working_depth: "2.0 * m"
+    clearance: "0.25 * m"
+    tooth_thickness: "pi * m / 2"
+    circular_pitch: "pi * m"
+    tip_diameter: "pitch_diameter + 2 * addendum"
+    root_diameter: "pitch_diameter - 2 * dedendum"
+    root_fillet_radius: "0.38 * m"
+    base_pitch: "circular_pitch * cos(pressure_angle)"
+
+  internal_gear:
+    description: "Internal (ring) gear geometry - teeth face inward"
+    internal_tip_diameter: "pitch_diameter - 2 * addendum"
+    internal_root_diameter: "pitch_diameter + 2 * dedendum"
+
+  planetary_sizing:
+    description: "Planetary gear set constraints"
+    constraint: "(z_ring - z_sun) / 2 = z_planet"
+    assembly: "(z_sun + z_ring) must be divisible by num_planets"
+    center_distance: "(z_sun + z_planet) * m / 2"
+
+  3d_printing_tolerances:
+    description: "Tolerance adjustments for FDM 3D printing"
+    pla_clearance_mm: 0.15
+    petg_clearance_mm: 0.20
+    abs_clearance_mm: 0.25
+    tooth_thinning_percent: 2.0
+    backlash_recommendation: "0.05 * m to 0.1 * m"
+
+gears:
+  # ===========================================
+  # Module 0.5mm - Fine pitch (small gears)
+  # ===========================================
+  spur_m0.5_z12:
+    type: spur
+    standard: ISO
+    module_mm: 0.5
+    num_teeth: 12
+    pressure_angle_deg: 20.0
+    face_width_mm: 5.0
+    quality_grade: 8
+    description: "Small spur gear, module 0.5, suitable for precision mechanisms"
+    use_cases:
+      - "Watch mechanisms"
+      - "Small robotics"
+      - "Precision instruments"
+
+  spur_m0.5_z20:
+    type: spur
+    standard: ISO
+    module_mm: 0.5
+    num_teeth: 20
+    pressure_angle_deg: 20.0
+    face_width_mm: 5.0
+    quality_grade: 8
+    description: "Small spur gear, module 0.5, 20 teeth"
+    use_cases:
+      - "Precision mechanisms"
+      - "Small gearboxes"
+
+  spur_m0.5_z40:
+    type: spur
+    standard: ISO
+    module_mm: 0.5
+    num_teeth: 40
+    pressure_angle_deg: 20.0
+    face_width_mm: 5.0
+    quality_grade: 8
+    description: "Small spur gear, module 0.5, 40 teeth"
+    mating_gears: ["spur_m0.5_z12", "spur_m0.5_z20"]
+
+  # ===========================================
+  # Module 1.0mm - Standard small gears
+  # ===========================================
+  spur_m1_z12:
+    type: spur
+    standard: ISO
+    module_mm: 1.0
+    num_teeth: 12
+    pressure_angle_deg: 20.0
+    face_width_mm: 10.0
+    quality_grade: 7
+    description: "Standard spur gear, module 1, minimum practical tooth count"
+    use_cases:
+      - "Small gearboxes"
+      - "Hobby robotics"
+      - "3D printed mechanisms"
+
+  spur_m1_z16:
+    type: spur
+    standard: ISO
+    module_mm: 1.0
+    num_teeth: 16
+    pressure_angle_deg: 20.0
+    face_width_mm: 10.0
+    quality_grade: 7
+    description: "Standard spur gear, module 1, 16 teeth"
+    mating_gears: ["spur_m1_z12", "spur_m1_z20", "spur_m1_z24"]
+
+  spur_m1_z20:
+    type: spur
+    standard: ISO
+    module_mm: 1.0
+    num_teeth: 20
+    pressure_angle_deg: 20.0
+    face_width_mm: 10.0
+    quality_grade: 7
+    description: "Standard spur gear, module 1, 20 teeth - good general purpose"
+    use_cases:
+      - "General purpose gearing"
+      - "1:1 to 3:1 ratios"
+
+  spur_m1_z24:
+    type: spur
+    standard: ISO
+    module_mm: 1.0
+    num_teeth: 24
+    pressure_angle_deg: 20.0
+    face_width_mm: 10.0
+    quality_grade: 7
+    description: "Standard spur gear, module 1, 24 teeth"
+
+  spur_m1_z30:
+    type: spur
+    standard: ISO
+    module_mm: 1.0
+    num_teeth: 30
+    pressure_angle_deg: 20.0
+    face_width_mm: 10.0
+    quality_grade: 7
+    description: "Standard spur gear, module 1, 30 teeth"
+
+  spur_m1_z40:
+    type: spur
+    standard: ISO
+    module_mm: 1.0
+    num_teeth: 40
+    pressure_angle_deg: 20.0
+    face_width_mm: 10.0
+    quality_grade: 7
+    description: "Standard spur gear, module 1, 40 teeth"
+    mating_gears: ["spur_m1_z12", "spur_m1_z16", "spur_m1_z20"]
+
+  spur_m1_z60:
+    type: spur
+    standard: ISO
+    module_mm: 1.0
+    num_teeth: 60
+    pressure_angle_deg: 20.0
+    face_width_mm: 10.0
+    quality_grade: 7
+    description: "Standard spur gear, module 1, 60 teeth - large driven gear"
+
+  # ===========================================
+  # Module 1.5mm - Medium gears
+  # ===========================================
+  spur_m1.5_z12:
+    type: spur
+    standard: ISO
+    module_mm: 1.5
+    num_teeth: 12
+    pressure_angle_deg: 20.0
+    face_width_mm: 15.0
+    quality_grade: 7
+    description: "Medium spur gear, module 1.5, 12 teeth"
+
+  spur_m1.5_z20:
+    type: spur
+    standard: ISO
+    module_mm: 1.5
+    num_teeth: 20
+    pressure_angle_deg: 20.0
+    face_width_mm: 15.0
+    quality_grade: 7
+    description: "Medium spur gear, module 1.5, 20 teeth"
+
+  spur_m1.5_z30:
+    type: spur
+    standard: ISO
+    module_mm: 1.5
+    num_teeth: 30
+    pressure_angle_deg: 20.0
+    face_width_mm: 15.0
+    quality_grade: 7
+    description: "Medium spur gear, module 1.5, 30 teeth"
+
+  # ===========================================
+  # Module 2.0mm - Larger gears
+  # ===========================================
+  spur_m2_z12:
+    type: spur
+    standard: ISO
+    module_mm: 2.0
+    num_teeth: 12
+    pressure_angle_deg: 20.0
+    face_width_mm: 20.0
+    quality_grade: 6
+    description: "Large spur gear, module 2, 12 teeth - high torque applications"
+    use_cases:
+      - "Power transmission"
+      - "Industrial machinery"
+      - "Heavy duty robotics"
+
+  spur_m2_z16:
+    type: spur
+    standard: ISO
+    module_mm: 2.0
+    num_teeth: 16
+    pressure_angle_deg: 20.0
+    face_width_mm: 20.0
+    quality_grade: 6
+    description: "Large spur gear, module 2, 16 teeth"
+
+  spur_m2_z20:
+    type: spur
+    standard: ISO
+    module_mm: 2.0
+    num_teeth: 20
+    pressure_angle_deg: 20.0
+    face_width_mm: 20.0
+    quality_grade: 6
+    description: "Large spur gear, module 2, 20 teeth"
+
+  spur_m2_z24:
+    type: spur
+    standard: ISO
+    module_mm: 2.0
+    num_teeth: 24
+    pressure_angle_deg: 20.0
+    face_width_mm: 20.0
+    quality_grade: 6
+    description: "Large spur gear, module 2, 24 teeth"
+
+  spur_m2_z30:
+    type: spur
+    standard: ISO
+    module_mm: 2.0
+    num_teeth: 30
+    pressure_angle_deg: 20.0
+    face_width_mm: 20.0
+    quality_grade: 6
+    description: "Large spur gear, module 2, 30 teeth"
+
+  spur_m2_z40:
+    type: spur
+    standard: ISO
+    module_mm: 2.0
+    num_teeth: 40
+    pressure_angle_deg: 20.0
+    face_width_mm: 20.0
+    quality_grade: 6
+    description: "Large spur gear, module 2, 40 teeth"
+
+  spur_m2_z60:
+    type: spur
+    standard: ISO
+    module_mm: 2.0
+    num_teeth: 60
+    pressure_angle_deg: 20.0
+    face_width_mm: 20.0
+    quality_grade: 6
+    description: "Large spur gear, module 2, 60 teeth"
+
+  # ===========================================
+  # Module 3.0mm - Heavy duty gears
+  # ===========================================
+  spur_m3_z12:
+    type: spur
+    standard: ISO
+    module_mm: 3.0
+    num_teeth: 12
+    pressure_angle_deg: 20.0
+    face_width_mm: 30.0
+    quality_grade: 6
+    description: "Heavy duty spur gear, module 3"
+
+  spur_m3_z20:
+    type: spur
+    standard: ISO
+    module_mm: 3.0
+    num_teeth: 20
+    pressure_angle_deg: 20.0
+    face_width_mm: 30.0
+    quality_grade: 6
+    description: "Heavy duty spur gear, module 3, 20 teeth"
+
+  # ===========================================
+  # Planetary Gear Sets - Module 1.0mm
+  # Sun + Ring must be divisible by num_planets
+  # (Ring - Sun) / 2 = Planet teeth
+  # ===========================================
+
+  # Set 1: 12-18-48 (3 planets)
+  # (48 - 12) / 2 = 18, (12 + 48) / 3 = 20 (divisible)
+  planetary_sun_m1_z12:
+    type: planetary_sun
+    standard: ISO
+    module_mm: 1.0
+    num_teeth: 12
+    pressure_angle_deg: 20.0
+    face_width_mm: 10.0
+    quality_grade: 7
+    description: "Planetary sun gear for 12-18-48 set (ratio 5:1)"
+    mating_gears: ["planetary_planet_m1_z18", "planetary_ring_m1_z48"]
+    use_cases:
+      - "Compact speed reducers"
+      - "Servo gearboxes"
+      - "Robotic joints"
+
+  planetary_planet_m1_z18:
+    type: planetary_planet
+    standard: ISO
+    module_mm: 1.0
+    num_teeth: 18
+    pressure_angle_deg: 20.0
+    face_width_mm: 10.0
+    quality_grade: 7
+    description: "Planetary planet gear for 12-18-48 set"
+    mating_gears: ["planetary_sun_m1_z12", "planetary_ring_m1_z48"]
+
+  planetary_ring_m1_z48:
+    type: planetary_ring
+    standard: ISO
+    module_mm: 1.0
+    num_teeth: 48
+    pressure_angle_deg: 20.0
+    face_width_mm: 10.0
+    quality_grade: 7
+    description: "Planetary ring gear for 12-18-48 set (internal teeth)"
+    mating_gears: ["planetary_sun_m1_z12", "planetary_planet_m1_z18"]
+
+  # Set 2: 15-21-57 (3 planets)
+  # (57 - 15) / 2 = 21, (15 + 57) / 3 = 24 (divisible)
+  planetary_sun_m1_z15:
+    type: planetary_sun
+    standard: ISO
+    module_mm: 1.0
+    num_teeth: 15
+    pressure_angle_deg: 20.0
+    face_width_mm: 10.0
+    quality_grade: 7
+    description: "Planetary sun gear for 15-21-57 set (ratio 4.8:1)"
+    mating_gears: ["planetary_planet_m1_z21", "planetary_ring_m1_z57"]
+
+  planetary_planet_m1_z21:
+    type: planetary_planet
+    standard: ISO
+    module_mm: 1.0
+    num_teeth: 21
+    pressure_angle_deg: 20.0
+    face_width_mm: 10.0
+    quality_grade: 7
+    description: "Planetary planet gear for 15-21-57 set"
+    mating_gears: ["planetary_sun_m1_z15", "planetary_ring_m1_z57"]
+
+  planetary_ring_m1_z57:
+    type: planetary_ring
+    standard: ISO
+    module_mm: 1.0
+    num_teeth: 57
+    pressure_angle_deg: 20.0
+    face_width_mm: 10.0
+    quality_grade: 7
+    description: "Planetary ring gear for 15-21-57 set"
+    mating_gears: ["planetary_sun_m1_z15", "planetary_planet_m1_z21"]
+
+  # Set 3: 18-27-72 (4 planets)
+  # (72 - 18) / 2 = 27, (18 + 72) / 4 = 22.5 - need adjustment
+  # Use 16-26-68 instead: (68-16)/2=26, (16+68)/4=21 (works)
+  planetary_sun_m1_z16:
+    type: planetary_sun
+    standard: ISO
+    module_mm: 1.0
+    num_teeth: 16
+    pressure_angle_deg: 20.0
+    face_width_mm: 10.0
+    quality_grade: 7
+    description: "Planetary sun gear for 16-26-68 set (4 planets, ratio 5.25:1)"
+    mating_gears: ["planetary_planet_m1_z26", "planetary_ring_m1_z68"]
+
+  planetary_planet_m1_z26:
+    type: planetary_planet
+    standard: ISO
+    module_mm: 1.0
+    num_teeth: 26
+    pressure_angle_deg: 20.0
+    face_width_mm: 10.0
+    quality_grade: 7
+    description: "Planetary planet gear for 16-26-68 set"
+    mating_gears: ["planetary_sun_m1_z16", "planetary_ring_m1_z68"]
+
+  planetary_ring_m1_z68:
+    type: planetary_ring
+    standard: ISO
+    module_mm: 1.0
+    num_teeth: 68
+    pressure_angle_deg: 20.0
+    face_width_mm: 10.0
+    quality_grade: 7
+    description: "Planetary ring gear for 16-26-68 set"
+    mating_gears: ["planetary_sun_m1_z16", "planetary_planet_m1_z26"]
+
+  # ===========================================
+  # Planetary Gear Sets - Module 2.0mm (larger)
+  # ===========================================
+
+  # Set: 12-18-48 at module 2 (3 planets)
+  planetary_sun_m2_z12:
+    type: planetary_sun
+    standard: ISO
+    module_mm: 2.0
+    num_teeth: 12
+    pressure_angle_deg: 20.0
+    face_width_mm: 20.0
+    quality_grade: 6
+    description: "Large planetary sun gear, module 2, 12-18-48 set"
+    mating_gears: ["planetary_planet_m2_z18", "planetary_ring_m2_z48"]
+    use_cases:
+      - "Heavy duty reducers"
+      - "Industrial gearboxes"
+
+  planetary_planet_m2_z18:
+    type: planetary_planet
+    standard: ISO
+    module_mm: 2.0
+    num_teeth: 18
+    pressure_angle_deg: 20.0
+    face_width_mm: 20.0
+    quality_grade: 6
+    description: "Large planetary planet gear, module 2"
+    mating_gears: ["planetary_sun_m2_z12", "planetary_ring_m2_z48"]
+
+  planetary_ring_m2_z48:
+    type: planetary_ring
+    standard: ISO
+    module_mm: 2.0
+    num_teeth: 48
+    pressure_angle_deg: 20.0
+    face_width_mm: 20.0
+    quality_grade: 6
+    description: "Large planetary ring gear, module 2"
+    mating_gears: ["planetary_sun_m2_z12", "planetary_planet_m2_z18"]
+
+  # ===========================================
+  # Helical Gears - Smoother, quieter operation
+  # ===========================================
+  helical_m1_z20_h15:
+    type: helical
+    standard: ISO
+    module_mm: 1.0
+    num_teeth: 20
+    pressure_angle_deg: 20.0
+    helix_angle_deg: 15.0
+    face_width_mm: 15.0
+    quality_grade: 7
+    description: "Helical gear, 15° helix angle - smoother than spur"
+    use_cases:
+      - "Quiet gearboxes"
+      - "High-speed applications"
+      - "Automotive transmissions"
+
+  helical_m1_z30_h15:
+    type: helical
+    standard: ISO
+    module_mm: 1.0
+    num_teeth: 30
+    pressure_angle_deg: 20.0
+    helix_angle_deg: 15.0
+    face_width_mm: 15.0
+    quality_grade: 7
+    description: "Helical gear, 30 teeth, 15° helix"
+    mating_gears: ["helical_m1_z20_h15"]
+
+  helical_m2_z20_h20:
+    type: helical
+    standard: ISO
+    module_mm: 2.0
+    num_teeth: 20
+    pressure_angle_deg: 20.0
+    helix_angle_deg: 20.0
+    face_width_mm: 25.0
+    quality_grade: 6
+    description: "Large helical gear, 20° helix angle"
+
+  # ===========================================
+  # Rack and Pinion
+  # ===========================================
+  rack_m1_l100:
+    type: rack
+    standard: ISO
+    module_mm: 1.0
+    num_teeth: 100  # Teeth per 100mm length
+    pressure_angle_deg: 20.0
+    face_width_mm: 10.0
+    quality_grade: 7
+    description: "Gear rack, module 1, 100mm length (linear motion)"
+    use_cases:
+      - "Linear actuators"
+      - "CNC machines"
+      - "Sliding doors"
+
+  rack_m2_l100:
+    type: rack
+    standard: ISO
+    module_mm: 2.0
+    num_teeth: 50  # Teeth per 100mm length (pi*m per tooth)
+    pressure_angle_deg: 20.0
+    face_width_mm: 20.0
+    quality_grade: 6
+    description: "Gear rack, module 2, 100mm length"
+
+  # ===========================================
+  # Bevel Gears - 90° shaft angle
+  # ===========================================
+  bevel_m1_z20:
+    type: bevel
+    standard: ISO
+    module_mm: 1.0
+    num_teeth: 20
+    pressure_angle_deg: 20.0
+    face_width_mm: 8.0
+    quality_grade: 7
+    description: "Straight bevel gear, module 1, for 90° shaft angle"
+    use_cases:
+      - "Right angle drives"
+      - "Differential gears"
+
+  bevel_m1_z40:
+    type: bevel
+    standard: ISO
+    module_mm: 1.0
+    num_teeth: 40
+    pressure_angle_deg: 20.0
+    face_width_mm: 8.0
+    quality_grade: 7
+    description: "Straight bevel gear, 40 teeth, mates with z20 for 2:1 ratio"
+    mating_gears: ["bevel_m1_z20"]
+
+  bevel_m2_z15:
+    type: bevel
+    standard: ISO
+    module_mm: 2.0
+    num_teeth: 15
+    pressure_angle_deg: 20.0
+    face_width_mm: 15.0
+    quality_grade: 6
+    description: "Large bevel gear, module 2"
+
+  bevel_m2_z30:
+    type: bevel
+    standard: ISO
+    module_mm: 2.0
+    num_teeth: 30
+    pressure_angle_deg: 20.0
+    face_width_mm: 15.0
+    quality_grade: 6
+    description: "Large bevel gear, 30 teeth"
+    mating_gears: ["bevel_m2_z15"]
+
+  # ===========================================
+  # Worm Gears - High ratio, self-locking
+  # ===========================================
+  worm_m2_z1:
+    type: worm
+    standard: ISO
+    module_mm: 2.0
+    num_teeth: 1  # Single-start worm
+    pressure_angle_deg: 20.0
+    face_width_mm: 30.0
+    quality_grade: 7
+    description: "Single-start worm, module 2 - high reduction, self-locking"
+    use_cases:
+      - "High ratio reducers (up to 100:1)"
+      - "Self-locking applications"
+      - "Hoisting equipment"
+
+  worm_m2_z2:
+    type: worm
+    standard: ISO
+    module_mm: 2.0
+    num_teeth: 2  # Double-start worm
+    pressure_angle_deg: 20.0
+    face_width_mm: 30.0
+    quality_grade: 7
+    description: "Double-start worm - higher efficiency than single-start"
+
+  # ===========================================
+  # Internal (Ring) Gears - Standalone
+  # ===========================================
+  internal_m1_z40:
+    type: internal
+    standard: ISO
+    module_mm: 1.0
+    num_teeth: 40
+    pressure_angle_deg: 20.0
+    face_width_mm: 10.0
+    quality_grade: 7
+    description: "Internal gear, 40 teeth - for epicyclic trains"
+    use_cases:
+      - "Planetary gearboxes"
+      - "Compact drives"
+
+  internal_m1_z60:
+    type: internal
+    standard: ISO
+    module_mm: 1.0
+    num_teeth: 60
+    pressure_angle_deg: 20.0
+    face_width_mm: 10.0
+    quality_grade: 7
+    description: "Internal gear, 60 teeth"
+
+  internal_m2_z48:
+    type: internal
+    standard: ISO
+    module_mm: 2.0
+    num_teeth: 48
+    pressure_angle_deg: 20.0
+    face_width_mm: 20.0
+    quality_grade: 6
+    description: "Large internal gear, module 2"
+
+  # ===========================================
+  # 3D Printing Optimized Gears
+  # Pre-adjusted for FDM printing tolerances
+  # ===========================================
+  spur_m1_z20_3dp:
+    type: spur
+    standard: ISO
+    module_mm: 1.0
+    num_teeth: 20
+    pressure_angle_deg: 20.0
+    face_width_mm: 10.0
+    quality_grade: 9
+    backlash_mm: 0.1
+    profile_shift_coefficient: -0.02
+    description: "3D print optimized spur gear with built-in backlash"
+    use_cases:
+      - "FDM 3D printed gearboxes"
+      - "Prototype mechanisms"
+    metadata:
+      print_orientation: "flat on bed"
+      min_layer_height_mm: 0.15
+      recommended_infill: "100% for teeth"
+
+  spur_m2_z16_3dp:
+    type: spur
+    standard: ISO
+    module_mm: 2.0
+    num_teeth: 16
+    pressure_angle_deg: 20.0
+    face_width_mm: 20.0
+    quality_grade: 9
+    backlash_mm: 0.15
+    profile_shift_coefficient: -0.02
+    description: "3D print optimized large spur gear"
+    metadata:
+      print_orientation: "flat on bed"
+      min_layer_height_mm: 0.2
+
+  # ===========================================
+  # Design Guidelines (not a gear spec)
+  # ===========================================
+  _guidelines:
+    type: guidelines
+    minimum_teeth:
+      description: "Minimum teeth to avoid undercutting at 20° pressure angle"
+      standard_external: 17
+      practical_external: 12
+      internal: 18
+    face_width_rules:
+      minimum: "8 * module"
+      typical: "10 * module"
+      maximum: "12 * module"
+    backlash_guidelines:
+      fine_pitch: "0.05 * module"
+      standard: "0.08 * module"
+      coarse_3d_print: "0.1 to 0.15 * module"
+    center_distance:
+      external_pair: "(z1 + z2) * m / 2"
+      internal_pair: "(z_ring - z_pinion) * m / 2"
+    contact_ratio:
+      minimum: 1.2
+      recommended: "1.4 to 1.8"
+      notes: "Higher contact ratio = smoother operation"

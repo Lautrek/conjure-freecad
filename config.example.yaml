@@ -1,0 +1,83 @@
+# Conjure Agent Configuration
+#
+# This file shows how to configure the local agent for:
+# 1. Local FreeCAD connection
+# 2. Hosted server integration (optional)
+# 3. Subscription tier
+#
+# Copy this to ~/.conjure/config.yaml or set environment variables
+
+# Local FreeCAD Connection
+freecad:
+  host: localhost
+  port: 9876
+
+# Hosted Server Integration (Optional - Phase 3)
+# Comment out or remove this section to run in local-only mode
+# To enable, set the following environment variables:
+# - CONJURE_HOSTED_URL: URL of hosted server (e.g., https://api.conjure.com)
+# - CONJURE_API_KEY: Your API key from the hosted server
+hosted_server:
+  url: https://api.conjure.com
+  api_key: your-api-key-here
+  enabled: true
+
+# Subscription Tier
+# Determines which features are available
+# - free: 100 operations/month, no premium features
+# - premium: unlimited operations, all premium features
+subscription:
+  tier: free
+
+# ==============================================================================
+# ENVIRONMENT VARIABLE OVERRIDES
+# ==============================================================================
+#
+# You can override config file settings with environment variables:
+#
+# Local FreeCAD:
+#   CONJURE_HOST=localhost
+#   CONJURE_PORT=9876
+#
+# Hosted Server:
+#   CONJURE_HOSTED_URL=https://api.conjure.com
+#   CONJURE_API_KEY=your-api-key
+#
+# Example:
+#   export CONJURE_HOSTED_URL=https://api.conjure.com
+#   export CONJURE_API_KEY=sk-abc123def456
+#   conjure-agent
+
+# ==============================================================================
+# CONFIGURATION SEARCH PATHS
+# ==============================================================================
+#
+# The agent looks for config.yaml in this order:
+#
+# 1. ~/.conjure/config.yaml
+# 2. ~/.config/conjure/config.yaml
+# 3. /etc/conjure/config.yaml
+#
+# Use the first location for per-user configuration
+
+# ==============================================================================
+# QUICK START
+# ==============================================================================
+#
+# 1. Local Mode Only (No Hosted Server):
+#    Just set FreeCAD connection, leave hosted_server.enabled: false
+#    Run: conjure-agent
+#
+# 2. With Hosted Server:
+#    a. Register at the hosted server to get API key
+#    b. Set CONJURE_HOSTED_URL and CONJURE_API_KEY
+#    c. Set subscription tier (free or premium)
+#    d. Run: conjure-agent
+#    e. Agent will authenticate and report usage stats
+#
+# 3. Troubleshooting:
+#    - Check ~/.conjure/config.yaml exists and is readable
+#    - Verify CONJURE_* environment variables are set
+#    - Check hosted server is reachable: curl https://api.conjure.com/health
+#    - Verify API key is valid: curl https://api.conjure.com/api/v1/auth/user \
+#        -H "X-API-Key: YOUR_KEY"
