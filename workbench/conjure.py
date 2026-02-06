@@ -656,6 +656,7 @@ class ConjureServer:
                     "list_edges",
                     "list_objects",
                     "get_topology",
+                    "inspect_topology",
                     "get_edges",
                     "get_faces",
                     "get_face_info",
@@ -3062,6 +3063,96 @@ class ConjureServer:
     def _cmd_list_edges(self, params):
         """Alias for get_edges - MCP compatibility."""
         return self._cmd_get_edges(params)
+
+    def _cmd_inspect_topology(self, params):
+        """Inspect high-level topology: solid count, compound detection, shell status.
+
+        Returns shape type classification, solid/shell/compound counts, and
+        per-solid details without enumerating every vertex/edge/face.
+
+        Parameters:
+            object_name: Object to inspect
+        """
+        obj, error = self._get_object(params)
+        if error:
+            return error
+
+        if not hasattr(obj, "Shape"):
+            return {"status": "error", "error": f"Object '{obj.Name}' has no shape"}
+
+        shape = obj.Shape
+        shape_type = shape.ShapeType
+
+        solids = list(shape.Solids)
+        shells = list(shape.Shells)
+        wires = list(shape.Wires)
+        compounds = []
+
+        # Walk compound children if applicable
+        if shape_type == "Compound":
+            for i, child in enumerate(shape.SubShapes):
+                child_info = {
+                    "index": i,
+                    "shape_type": child.ShapeType,
+                }
+                if hasattr(child, "Volume"):
+                    child_info["volume"] = round(child.Volume, 6)
+                if hasattr(child, "Area"):
+                    child_info["surface_area"] = round(child.Area, 6)
+                compounds.append(child_info)
+
+        # Per-solid detail
+        solid_info = []
+        for i, s in enumerate(solids):
+            info = {
+                "index": i,
+                "volume": round(s.Volume, 6),
+                "surface_area": round(s.Area, 6),
+                "face_count": len(s.Faces),
+                "edge_count": len(s.Edges),
+            }
+            try:
+                info["is_closed"] = s.Shells[0].isClosed() if s.Shells else True
+            except Exception:
+                info["is_closed"] = None
+            solid_info.append(info)
+
+        # Per-shell detail
+        shell_info = []
+        for i, sh in enumerate(shells):
+            info = {
+                "index": i,
+                "face_count": len(sh.Faces),
+            }
+            try:
+                info["is_closed"] = sh.isClosed()
+            except Exception:
+                info["is_closed"] = None
+            shell_info.append(info)
+
+        result = {
+            "status": "success",
+            "object_name": obj.Name,
+            "shape_type": shape_type,
+            "is_compound": shape_type == "Compound",
+            "is_solid": shape_type == "Solid" or (shape_type == "Compound" and len(solids) > 0),
+            "solid_count": len(solids),
+            "shell_count": len(shells),
+            "face_count": len(shape.Faces),
+            "edge_count": len(shape.Edges),
+            "wire_count": len(wires),
+            "volume": round(shape.Volume, 6) if hasattr(shape, "Volume") else 0.0,
+            "surface_area": round(shape.Area, 6) if hasattr(shape, "Area") else 0.0,
+        }
+
+        if solid_info:
+            result["solids"] = solid_info
+        if shell_info:
+            result["shells"] = shell_info
+        if compounds:
+            result["compound_children"] = compounds
+
+        return result
 
     def _cmd_get_object_details(self, params):
         """Get detailed object information."""
