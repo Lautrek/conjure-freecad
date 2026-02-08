@@ -1431,6 +1431,126 @@ class ConjureServer:
         except Exception as e:
             return {"status": "error", "error": str(e)}
 
+    def _cmd_create_worm_from_profile(self, params):
+        """Create worm gear from server-computed profile.
+
+        Uses Part.makeHelix + trapezoidal profile sweep for clean helical threads.
+        The server provides all dimensions; this method handles 3D construction.
+        """
+        import Part
+
+        doc = self._get_doc()
+        name = params.get("name", "Worm")
+        pitch_d = params["pitch_diameter"]
+        tip_d = params["tip_diameter"]
+        root_d = params["root_diameter"]
+        length = params["length"]
+        lead = params["lead"]
+        num_starts = params.get("num_starts", 1)
+        bore_d = params.get("bore_diameter", 0)
+        thread_profile = params.get("thread_profile", {})
+        pos = params.get("position") or [0, 0, 0]
+
+        tip_r = tip_d / 2
+        root_r = root_d / 2
+        pitch_r = pitch_d / 2
+
+        try:
+            # Thread cross-section dimensions
+            axial_pitch = thread_profile.get("axial_pitch", lead / max(num_starts, 1))
+            tip_hw = thread_profile.get("tip_half_width", 0.25 * axial_pitch)
+            root_hw = thread_profile.get("root_half_width", 0.35 * axial_pitch)
+            tooth_depth = tip_r - root_r
+
+            # Overshoot: extra helix length for clean end trimming
+            overshoot = lead
+
+            # Build thread: create one helix sweep, then rotate copies for multi-start
+            import math as _math
+            half_depth = tooth_depth / 2
+
+            # 1. Create helix path at pitch radius (always starts at angle=0)
+            #    Part.makeHelix(pitch, height, radius) - 4th param is cone angle, NOT start angle
+            helix_shape = Part.makeHelix(lead, length + 2 * overshoot, pitch_r)
+            helix_wire = Part.Wire(helix_shape)
+
+            # 2. Build trapezoidal tooth cross-section at helix start
+            #    Helix starts at (pitch_r, 0, 0), so radial direction is +X
+            profile_pts = [
+                App.Vector(pitch_r - half_depth, 0, -root_hw),   # root left
+                App.Vector(pitch_r + half_depth, 0, -tip_hw),    # tip left
+                App.Vector(pitch_r + half_depth, 0,  tip_hw),    # tip right
+                App.Vector(pitch_r - half_depth, 0,  root_hw),   # root right
+                App.Vector(pitch_r - half_depth, 0, -root_hw),   # close
+            ]
+            profile_wire = Part.makePolygon(profile_pts)
+
+            # 3. Sweep profile along helix
+            pipe = helix_wire.makePipeShell([profile_wire], True, True)
+            if hasattr(pipe, 'makeSolid'):
+                base_thread = pipe.makeSolid()
+            else:
+                base_thread = Part.Solid(pipe)
+
+            # 4. Create rotated copies for multi-start worms
+            thread_solids = [base_thread]
+            for start_idx in range(1, num_starts):
+                angle_deg = (360.0 / num_starts) * start_idx
+                rotated = base_thread.copy()
+                rotated.rotate(App.Vector(0, 0, 0), App.Vector(0, 0, 1), angle_deg)
+                thread_solids.append(rotated)
+
+            # 4. Create root cylinder (worm core)
+            root_cyl = Part.makeCylinder(root_r, length + 2 * overshoot)
+
+            # 5. Fuse all thread starts with root cylinder
+            worm_shape = root_cyl
+            for ts in thread_solids:
+                worm_shape = worm_shape.fuse(ts)
+
+            # 6. Clip to desired length (remove overshoot)
+            clip_box = Part.makeBox(
+                tip_d * 2, tip_d * 2, length,
+                App.Vector(-tip_d, -tip_d, overshoot)
+            )
+            worm_shape = worm_shape.common(clip_box)
+
+            # 7. Shift so Z=0 is at bottom of the worm
+            worm_shape.translate(App.Vector(0, 0, -overshoot))
+
+            # 8. Add bore if specified
+            if bore_d > 0:
+                bore = Part.makeCylinder(bore_d / 2, length + 2)
+                bore.translate(App.Vector(0, 0, -1))
+                worm_shape = worm_shape.cut(bore)
+
+            # 9. Clean up shape (timeout-guarded – removeSplitter can hang)
+            try:
+                with self._timeout_guard(15, "removeSplitter"):
+                    worm_shape = worm_shape.removeSplitter()
+            except TimeoutError:
+                log_warning("removeSplitter timed out after 15s, using raw shape")
+                App.Console.PrintWarning(
+                    "[Conjure] removeSplitter timed out – using shape as-is\n"
+                )
+
+            obj = doc.addObject("Part::Feature", name)
+            obj.Shape = worm_shape
+            obj.Placement.Base = App.Vector(pos[0], pos[1], pos[2])
+            self._safe_recompute(doc)
+
+            return {
+                "status": "success",
+                "object": name,
+                "pitch_diameter": pitch_d,
+                "tip_diameter": tip_d,
+                "root_diameter": root_d,
+                "lead": lead,
+                "num_starts": num_starts,
+            }
+        except Exception as e:
+            return {"status": "error", "error": str(e)}
+
     # Legacy gear commands - delegate to profile-based commands
     # These exist for backward compatibility until MCP bridge is updated
 
@@ -1552,13 +1672,27 @@ class ConjureServer:
                 shapes.append(obj.Shape)
 
         if len(shapes) >= 2:
+            # Face-count pre-check: warn if combined faces exceed threshold
+            total_faces = sum(self._count_faces(s) for s in shapes)
+            face_warning = None
+            if total_faces > 500:
+                face_warning = (
+                    f"High face count ({total_faces} total) – "
+                    "boolean may be slow or hang. Consider simplifying geometry."
+                )
+                log_warning(f"boolean_fuse: {face_warning}")
+                App.Console.PrintWarning(f"[Conjure] {face_warning}\n")
+
             result = shapes[0]
             for shape in shapes[1:]:
                 result = result.fuse(shape)
             fused = doc.addObject("Part::Feature", name)
             fused.Shape = result
             self._safe_recompute(doc)
-            return {"status": "success", "object": name}
+            resp = {"status": "success", "object": name}
+            if face_warning:
+                resp["warning"] = face_warning
+            return resp
         return {"status": "error", "error": "Need at least 2 objects to fuse"}
 
     def _cmd_boolean_cut(self, params):
@@ -1581,13 +1715,27 @@ class ConjureServer:
         if not tool or not hasattr(tool, "Shape"):
             return {"status": "error", "error": f"Tool object '{tool_name}' not found or has no shape"}
 
+        # Face-count pre-check
+        total_faces = self._count_faces(base.Shape) + self._count_faces(tool.Shape)
+        face_warning = None
+        if total_faces > 500:
+            face_warning = (
+                f"High face count ({total_faces} total) – "
+                "boolean may be slow or hang. Consider simplifying geometry."
+            )
+            log_warning(f"boolean_cut: {face_warning}")
+            App.Console.PrintWarning(f"[Conjure] {face_warning}\n")
+
         result = base.Shape.cut(tool.Shape)
         cut = doc.addObject("Part::Feature", name)
         cut.Shape = result
         if not params.get("keep_tool", False):
             doc.removeObject(tool.Name)
         self._safe_recompute(doc)
-        return {"status": "success", "object": name}
+        resp = {"status": "success", "object": name}
+        if face_warning:
+            resp["warning"] = face_warning
+        return resp
 
     def _cmd_boolean_intersect(self, params):
         """Intersect objects."""
@@ -1608,13 +1756,27 @@ class ConjureServer:
                 shapes.append(obj.Shape)
 
         if len(shapes) >= 2:
+            # Face-count pre-check
+            total_faces = sum(self._count_faces(s) for s in shapes)
+            face_warning = None
+            if total_faces > 500:
+                face_warning = (
+                    f"High face count ({total_faces} total) – "
+                    "boolean may be slow or hang. Consider simplifying geometry."
+                )
+                log_warning(f"boolean_intersect: {face_warning}")
+                App.Console.PrintWarning(f"[Conjure] {face_warning}\n")
+
             result = shapes[0]
             for shape in shapes[1:]:
                 result = result.common(shape)
             intersected = doc.addObject("Part::Feature", name)
             intersected.Shape = result
             self._safe_recompute(doc)
-            return {"status": "success", "object": name}
+            resp = {"status": "success", "object": name}
+            if face_warning:
+                resp["warning"] = face_warning
+            return resp
         return {"status": "error", "error": "Need at least 2 objects to intersect"}
 
     # ==================== Profile-Based Operations ====================
@@ -2325,6 +2487,37 @@ class ConjureServer:
             App.Console.PrintWarning(f"[Conjure] recompute failed: {e}\n")
             log_exception("safe_recompute", e)
             return False
+
+    @contextlib.contextmanager
+    def _timeout_guard(self, seconds, operation="operation"):
+        """Context manager that raises TimeoutError if body exceeds *seconds*.
+
+        Uses SIGALRM on Unix.  On platforms without SIGALRM the body runs
+        without a timeout (best-effort).
+        """
+        if not hasattr(signal, "SIGALRM"):
+            yield
+            return
+
+        def _alarm_handler(signum, frame):
+            raise TimeoutError(f"{operation} timed out after {seconds}s")
+
+        old_handler = signal.signal(signal.SIGALRM, _alarm_handler)
+        old_alarm = signal.alarm(seconds)
+        try:
+            yield
+        finally:
+            signal.alarm(0)
+            signal.signal(signal.SIGALRM, old_handler)
+            if old_alarm > 0:
+                signal.alarm(old_alarm)
+
+    def _count_faces(self, shape):
+        """Return the total face count for a shape (0 if unavailable)."""
+        try:
+            return len(shape.Faces)
+        except Exception:
+            return 0
 
     def _cmd_create_fillet(self, params):
         """Create fillet on edges.
@@ -3064,8 +3257,55 @@ class ConjureServer:
         return self._cmd_get_edges(params)
 
     def _cmd_get_object_details(self, params):
-        """Get detailed object information."""
-        return self._cmd_get_topology(params)
+        """Get object information at requested detail level.
+
+        Parameters:
+            object_name (str): Object to query.
+            detail_level (str): "summary" for lightweight response (bounding box,
+                volume, solid/face/edge counts) or "full" for complete vertex/edge/face
+                topology dump.  Defaults to "summary".
+        """
+        detail_level = params.get("detail_level", "summary")
+
+        if detail_level == "full":
+            return self._cmd_get_topology(params)
+
+        # --- summary mode (default) ---
+        obj, error = self._get_object(params)
+        if error:
+            return error
+
+        if not hasattr(obj, "Shape"):
+            return {"status": "error", "error": f"Object '{obj.Name}' has no shape"}
+
+        shape = obj.Shape
+        bbox = shape.BoundBox
+
+        summary = {
+            "status": "success",
+            "object_name": obj.Name,
+            "label": obj.Label,
+            "type": obj.TypeId,
+            "detail_level": "summary",
+            "bounding_box": {
+                "min": [round(bbox.XMin, 4), round(bbox.YMin, 4), round(bbox.ZMin, 4)],
+                "max": [round(bbox.XMax, 4), round(bbox.YMax, 4), round(bbox.ZMax, 4)],
+                "center": [round(bbox.Center.x, 4), round(bbox.Center.y, 4), round(bbox.Center.z, 4)],
+                "size": [round(bbox.XLength, 4), round(bbox.YLength, 4), round(bbox.ZLength, 4)],
+            },
+            "volume": round(shape.Volume, 4),
+            "area": round(shape.Area, 4),
+            "solid_count": len(shape.Solids),
+            "face_count": len(shape.Faces),
+            "edge_count": len(shape.Edges),
+            "vertex_count": len(shape.Vertexes),
+        }
+
+        if hasattr(obj, "Placement"):
+            pos = obj.Placement.Base
+            summary["position"] = [round(pos.x, 4), round(pos.y, 4), round(pos.z, 4)]
+
+        return summary
 
     # ==================== High-Level Feature Operations ====================
     # These enable context-aware modeling: "fillet the top face" instead of "fillet edges 1,3,5,7"
@@ -3957,21 +4197,36 @@ class ConjureServer:
 
         Parameters:
             object_name: Object to validate (optional, validates all if omitted)
+            max_objects: Cap the number of objects to validate (default 50).
+                         Prevents runaway validation on large documents.
+            skip_slow_checks: If true, skip shell-closure checks which can be
+                              expensive on high-face-count geometry (default false).
 
         Returns:
             Per-object validity, issues found, and summary.
         """
         doc = self._get_doc()
         target = params.get("object_name")
+        max_objects = params.get("max_objects", 50)
+        skip_slow = params.get("skip_slow_checks", False)
 
         objects_to_check = []
+        capped = False
         if target:
             obj = doc.getObject(target)
             if not obj:
                 return {"status": "error", "error": f"Object '{target}' not found"}
             objects_to_check = [obj]
         else:
-            objects_to_check = [o for o in doc.Objects if hasattr(o, "Shape")]
+            all_shape_objs = [o for o in doc.Objects if hasattr(o, "Shape")]
+            if len(all_shape_objs) > max_objects:
+                objects_to_check = all_shape_objs[:max_objects]
+                capped = True
+                log_warning(
+                    f"validate_geometry: capped at {max_objects}/{len(all_shape_objs)} objects"
+                )
+            else:
+                objects_to_check = all_shape_objs
 
         results = []
         for obj in objects_to_check:
@@ -3991,7 +4246,7 @@ class ConjureServer:
                     issues.append(f"Degenerate bounding box: {bb.XLength:.4f} x {bb.YLength:.4f} x {bb.ZLength:.4f}")
                 if hasattr(shape, "Volume") and shape.Volume < 1e-10:
                     issues.append("Near-zero volume")
-                if hasattr(shape, "Shells"):
+                if not skip_slow and hasattr(shape, "Shells"):
                     for i, shell in enumerate(shape.Shells):
                         if not shell.isClosed():
                             issues.append(f"Shell {i + 1} is not closed (not watertight)")
@@ -4006,7 +4261,7 @@ class ConjureServer:
             )
 
         valid_count = sum(1 for r in results if r["valid"])
-        return {
+        resp = {
             "status": "success",
             "objects": results,
             "summary": {
@@ -4015,6 +4270,15 @@ class ConjureServer:
                 "invalid": len(results) - valid_count,
             },
         }
+        if capped:
+            resp["warning"] = (
+                f"Validated {max_objects} of {len([o for o in doc.Objects if hasattr(o, 'Shape')])} "
+                "objects (capped by max_objects). Increase max_objects to validate more."
+            )
+        if skip_slow:
+            resp.setdefault("info", [])
+            resp["info"].append("Shell closure checks skipped (skip_slow_checks=true)")
+        return resp
 
     # ==================== Check All & Suggest Fixes ====================
 
@@ -5865,6 +6129,132 @@ class ConjureServer:
         finally:
             if use_signal_timeout:
                 signal.alarm(0)  # Cancel the alarm
+                signal.signal(signal.SIGALRM, old_handler)
+
+    def _cmd_eval_expression(self, params):
+        """Evaluate a Python expression and return its value directly.
+
+        Unlike run_script (which uses exec and requires storing into a result dict),
+        this uses eval() to return the expression value directly.
+
+        Args:
+            expression: Python expression to evaluate (required)
+
+        Returns:
+            status and the evaluated result
+        """
+        import signal
+        import sys
+
+        EVAL_TIMEOUT = 10  # seconds
+
+        expression = params.get("expression", "")
+
+        if not expression or not isinstance(expression, str):
+            return {"status": "error", "error": "Expression must be a non-empty string"}
+
+        if len(expression) > 10000:
+            return {"status": "error", "error": "Expression too long (max 10000 chars)"}
+
+        # Block dangerous patterns (defense in depth)
+        dangerous_patterns = ["import subprocess", "import os", "__import__", "compile("]
+        for pattern in dangerous_patterns:
+            if pattern in expression:
+                return {"status": "error", "error": f"Blocked pattern detected: {pattern}"}
+
+        # Timeout handler (Unix only)
+        class EvalTimeoutError(Exception):
+            pass
+
+        def timeout_handler(signum, frame):
+            raise EvalTimeoutError("Expression evaluation exceeded 10s limit")
+
+        use_signal_timeout = hasattr(signal, "SIGALRM") and sys.platform != "win32"
+
+        if use_signal_timeout:
+            old_handler = signal.signal(signal.SIGALRM, timeout_handler)
+            signal.alarm(EVAL_TIMEOUT)
+
+        try:
+            import math as _math
+
+            Part = __import__("Part") if "Part" in sys.modules else None
+            Draft = __import__("Draft") if "Draft" in sys.modules else None
+            Sketcher = __import__("Sketcher") if "Sketcher" in sys.modules else None
+
+            safe_builtins = {
+                "True": True,
+                "False": False,
+                "None": None,
+                "int": int,
+                "float": float,
+                "str": str,
+                "list": list,
+                "dict": dict,
+                "tuple": tuple,
+                "set": set,
+                "len": len,
+                "range": range,
+                "enumerate": enumerate,
+                "zip": zip,
+                "map": map,
+                "filter": filter,
+                "sorted": sorted,
+                "reversed": reversed,
+                "min": min,
+                "max": max,
+                "sum": sum,
+                "abs": abs,
+                "round": round,
+                "pow": pow,
+                "isinstance": isinstance,
+                "hasattr": hasattr,
+                "getattr": getattr,
+                "type": type,
+                "Exception": Exception,
+                "ValueError": ValueError,
+                "TypeError": TypeError,
+                "RuntimeError": RuntimeError,
+                "__import__": __import__,
+            }
+            eval_globals = {
+                "__builtins__": safe_builtins,
+                "App": App,
+                "FreeCAD": App,
+                "Gui": Gui if HAS_GUI else None,
+                "FreeCADGui": Gui if HAS_GUI else None,
+                "Part": Part,
+                "Draft": Draft,
+                "Sketcher": Sketcher,
+                "math": _math,
+            }
+
+            result = eval(expression, eval_globals)  # noqa: S307
+
+            # Convert to JSON-serializable format
+            if hasattr(result, "__iter__") and not isinstance(result, (str, dict)):
+                try:
+                    result = list(result)
+                except (TypeError, ValueError):
+                    result = str(result)
+
+            if not isinstance(result, (str, int, float, bool, list, dict, type(None))):
+                result = str(result)
+
+            return {"status": "success", "result": result}
+        except EvalTimeoutError as e:
+            return {"status": "error", "error": str(e)}
+        except SyntaxError as e:
+            return {
+                "status": "error",
+                "error": f"SyntaxError: {e}",
+                "hint": "Use script('run_script', ...) for statements. eval only accepts expressions.",
+            }
+        except Exception as e:
+            return {"status": "error", "error": f"{type(e).__name__}: {e}"}
+        finally:
+            if use_signal_timeout:
+                signal.alarm(0)
                 signal.signal(signal.SIGALRM, old_handler)
 
     # ==================== Engineering Material Commands ====================
