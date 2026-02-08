@@ -1113,6 +1113,127 @@ class ConjureServer:
         doc = App.newDocument(name)
         return {"status": "success", "document": doc.Name}
 
+    # ==================== Spreadsheet / Parametric ====================
+
+    def _cmd_create_spreadsheet(self, params):
+        """Create a Spreadsheet object for parametric design.
+
+        Parameters:
+            name: spreadsheet name (default: "Spreadsheet")
+        """
+        doc = self._get_doc()
+        name = params.get("name", "Spreadsheet")
+        sheet = doc.addObject("Spreadsheet::Sheet", name)
+        self._safe_recompute(doc)
+        return {"status": "success", "object": sheet.Name}
+
+    def _cmd_set_cell(self, params):
+        """Set a cell value in a Spreadsheet.
+
+        Parameters:
+            spreadsheet: name of the Spreadsheet object
+            cell: cell address (e.g. "A1", "B2")
+            value: value to set (number or string)
+            alias: optional alias name for the cell
+        """
+        doc = self._get_doc()
+        ss_name = params.get("spreadsheet")
+        if not ss_name:
+            return {"status": "error", "error": "spreadsheet parameter is required"}
+        cell = params.get("cell")
+        if not cell:
+            return {"status": "error", "error": "cell parameter is required"}
+        value = params.get("value")
+        if value is None:
+            return {"status": "error", "error": "value parameter is required"}
+
+        obj = doc.getObject(ss_name)
+        if obj is None:
+            return {"status": "error", "error": f"Object '{ss_name}' not found"}
+        if not hasattr(obj, "set"):
+            return {"status": "error", "error": f"Object '{ss_name}' is not a Spreadsheet"}
+
+        obj.set(cell, str(value))
+
+        alias = params.get("alias")
+        if alias:
+            obj.setAlias(cell, alias)
+
+        self._safe_recompute(doc)
+        return {"status": "success", "spreadsheet": ss_name, "cell": cell, "value": value}
+
+    def _cmd_set_expression(self, params):
+        """Bind an object property to a spreadsheet expression.
+
+        Parameters:
+            object: name of the target object
+            property: property name (e.g. "Height", "Radius")
+            expression: expression string (e.g. "Params.A1", "Params.A1 * 2")
+        """
+        doc = self._get_doc()
+        obj_name = params.get("object")
+        if not obj_name:
+            return {"status": "error", "error": "object parameter is required"}
+        prop = params.get("property")
+        if not prop:
+            return {"status": "error", "error": "property parameter is required"}
+        expression = params.get("expression")
+        if not expression:
+            return {"status": "error", "error": "expression parameter is required"}
+
+        obj = doc.getObject(obj_name)
+        if obj is None:
+            return {"status": "error", "error": f"Object '{obj_name}' not found"}
+        if not hasattr(obj, prop):
+            return {"status": "error", "error": f"Object '{obj_name}' has no property '{prop}'"}
+
+        obj.setExpression(prop, expression)
+        self._safe_recompute(doc)
+
+        return {
+            "status": "success",
+            "object": obj_name,
+            "property": prop,
+            "expression": expression,
+        }
+
+    def _cmd_get_expression(self, params):
+        """Get the expression bound to an object property.
+
+        Parameters:
+            object: name of the target object
+            property: property name (e.g. "Height", "Radius"); omit to list all
+        """
+        doc = self._get_doc()
+        obj_name = params.get("object")
+        if not obj_name:
+            return {"status": "error", "error": "object parameter is required"}
+
+        obj = doc.getObject(obj_name)
+        if obj is None:
+            return {"status": "error", "error": f"Object '{obj_name}' not found"}
+
+        prop = params.get("property")
+        if prop:
+            # Return expression for a single property
+            expressions = {p: e for p, e in obj.ExpressionEngine}
+            expr = expressions.get(prop)
+            return {
+                "status": "success",
+                "object": obj_name,
+                "property": prop,
+                "expression": expr,
+                "value": getattr(obj, prop, None),
+            }
+        else:
+            # Return all expressions on this object
+            all_exprs = [{"property": p, "expression": e} for p, e in obj.ExpressionEngine]
+            return {
+                "status": "success",
+                "object": obj_name,
+                "expressions": all_exprs,
+            }
+
     def _cmd_enable_propagation(self, params):
         """Enable or disable automatic constraint propagation.
 
