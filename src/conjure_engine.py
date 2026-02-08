@@ -48,8 +48,11 @@ class ConjureEngine:
         """Set request ID for correlation."""
         self._request_id = request_id
 
-    def _connect(self) -> socket.socket:
+    def _connect(self, timeout: Optional[float] = None) -> socket.socket:
         """Create and configure socket connection.
+
+        Args:
+            timeout: Override default timeout in seconds (None uses self.timeout)
 
         Returns:
             Connected socket object
@@ -59,7 +62,7 @@ class ConjureEngine:
         """
         try:
             sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            sock.settimeout(self.timeout)
+            sock.settimeout(timeout if timeout is not None else self.timeout)
             sock.connect((self.host, self.port))
             return sock
         except ConnectionRefusedError as e:
@@ -137,23 +140,28 @@ class ConjureEngine:
             sock.close()
             raise ConjureConnectionError(f"Failed to receive response from FreeCAD: {str(e)}") from e
 
-    def execute(self, command: Dict[str, Any]) -> Dict[str, Any]:
+    def execute(self, command: Dict[str, Any], timeout: Optional[float] = None) -> Dict[str, Any]:
         """Execute command in FreeCAD and return response.
 
         Args:
             command: Command dictionary with 'type' and 'params'
+            timeout: Override default timeout in seconds (5-3600).
+                     None uses the engine default (30s).
 
         Returns:
             Response dictionary from FreeCAD
 
         Raises:
-            ConjureConnectionError: If communication fails
+            ConjureConnectionError: If communication fails or timeout is invalid
         """
+        if timeout is not None and (timeout < 5 or timeout > 3600):
+            raise ConjureConnectionError("timeout must be between 5 and 3600 seconds")
+
         # Add request ID for correlation if not present
         if "request_id" not in command:
             command["request_id"] = self.get_request_id()
 
-        sock = self._connect()
+        sock = self._connect(timeout=timeout)
         try:
             self._send_command(sock, command)
             response = self._receive_response(sock)
@@ -161,30 +169,45 @@ class ConjureEngine:
         finally:
             sock.close()
 
-    def send_command(self, command_text: str, get_context: bool = True) -> Dict[str, Any]:
+    def send_command(self, command_text: str, get_context: bool = True, timeout: Optional[float] = None) -> Dict[str, Any]:
         """Send FreeCAD command and get document context.
 
         Args:
             command_text: FreeCAD command to execute
             get_context: Whether to include document context in response
+            timeout: Override default timeout in seconds (5-3600)
 
         Returns:
             Response with command result and context
         """
         cmd = {"type": "send_command", "params": {"command": command_text, "get_context": get_context}}
-        return self.execute(cmd)
+        return self.execute(cmd, timeout=timeout)
 
-    def run_script(self, script: str) -> Dict[str, Any]:
+    def run_script(self, script: str, timeout: Optional[float] = None) -> Dict[str, Any]:
         """Run Python script in FreeCAD context.
 
         Args:
             script: Python script to execute
+            timeout: Override default timeout in seconds (5-3600)
 
         Returns:
             Script execution result
         """
         cmd = {"type": "run_script", "params": {"script": script}}
-        return self.execute(cmd)
+        return self.execute(cmd, timeout=timeout)
+
+    def eval_expression(self, expression: str, timeout: Optional[float] = None) -> Dict[str, Any]:
+        """Evaluate a Python expression in FreeCAD context and return its value.
+
+        Args:
+            expression: Python expression to evaluate
+            timeout: Override default timeout in seconds (5-3600)
+
+        Returns:
+            Expression evaluation result
+        """
+        cmd = {"type": "eval_expression", "params": {"expression": expression}}
+        return self.execute(cmd, timeout=timeout)
 
     def get_state(self, verbose: bool = False) -> Dict[str, Any]:
         """Get current FreeCAD document state.

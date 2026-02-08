@@ -690,7 +690,6 @@ class ConjureServer:
                     "get_history",
                     "undo",
                     "redo",
-                    "run_script",
                     "search_properties",
                     "find_contacts",
                     "capture_design_state",
@@ -699,6 +698,7 @@ class ConjureServer:
                     "get_view_info",
                     "get_feature_tree",
                     "list_snapshots",
+                    "eval_expression",
                 }
                 use_transaction = cmd_type not in _READ_ONLY
                 doc = App.ActiveDocument
@@ -5753,8 +5753,59 @@ class ConjureServer:
 
     # ==================== Script Command ====================
 
+    @staticmethod
+    def _serialize_value(value):
+        """Serialize a value for JSON transport, handling FreeCAD types.
+
+        Converts FreeCAD-specific types (Vector, Placement, BoundBox, Shape)
+        to JSON-serializable representations. Falls back to str() for
+        unrecognized types.
+
+        Args:
+            value: Any Python value to serialize
+
+        Returns:
+            A JSON-serializable representation of the value
+        """
+        if value is None or isinstance(value, (bool, int, float, str)):
+            return value
+        if isinstance(value, (list, tuple)):
+            return [ConjureServer._serialize_value(v) for v in value]
+        if isinstance(value, dict):
+            return {str(k): ConjureServer._serialize_value(v) for k, v in value.items()}
+        # FreeCAD Vector
+        if hasattr(value, "x") and hasattr(value, "y") and hasattr(value, "z") and type(value).__name__ == "Vector":
+            return {"x": value.x, "y": value.y, "z": value.z}
+        # FreeCAD Placement
+        if hasattr(value, "Base") and hasattr(value, "Rotation") and type(value).__name__ == "Placement":
+            return {
+                "Base": ConjureServer._serialize_value(value.Base),
+                "Rotation": {"Angle": value.Rotation.Angle, "Axis": ConjureServer._serialize_value(value.Rotation.Axis)},
+            }
+        # FreeCAD BoundBox
+        if hasattr(value, "XMin") and hasattr(value, "XMax") and type(value).__name__ == "BoundBox":
+            return {
+                "XMin": value.XMin, "YMin": value.YMin, "ZMin": value.ZMin,
+                "XMax": value.XMax, "YMax": value.YMax, "ZMax": value.ZMax,
+            }
+        # FreeCAD Shape - return summary instead of full geometry
+        if hasattr(value, "ShapeType") and hasattr(value, "Volume"):
+            return {"ShapeType": value.ShapeType, "Volume": value.Volume}
+        # Fallback: convert to string
+        return str(value)
+
     def _cmd_run_script(self, params):
-        """Run arbitrary Python script (escape hatch) with timeout protection."""
+        """Run arbitrary Python script (escape hatch) with timeout protection.
+
+        After execution, auto-captures:
+        - The 'result' dict (explicit results set by the script)
+        - The '__return__' variable (if set by the script)
+        - All new user-defined variables created during execution
+
+        FreeCAD types (Vector, Placement, etc.) are auto-serialized to JSON.
+
+        Set read_only=true to skip FreeCAD transaction wrapping (default: false).
+        """
         import signal
         import sys
 
@@ -5856,8 +5907,31 @@ class ConjureServer:
                 "Sketcher": Sketcher,
                 "math": _math,
             }
+            # Track pre-existing keys to identify user-defined variables
+            pre_keys = set(exec_globals.keys())
+
             exec(script, exec_globals)
-            return {"status": "success", "result": result}
+
+            # Build captured variables from user-defined names
+            captured = {}
+            for key, value in exec_globals.items():
+                if key in pre_keys or key.startswith("_"):
+                    continue
+                try:
+                    captured[key] = self._serialize_value(value)
+                except Exception:
+                    captured[key] = str(value)
+
+            # Build response: always include result dict, add __return__ and captured vars
+            response = {"status": "success", "result": result}
+            if "__return__" in exec_globals:
+                try:
+                    response["__return__"] = self._serialize_value(exec_globals["__return__"])
+                except Exception:
+                    response["__return__"] = str(exec_globals["__return__"])
+            if captured:
+                response["variables"] = captured
+            return response
         except ScriptTimeoutError as e:
             return {"status": "error", "error": str(e)}
         except Exception as e:
@@ -5865,6 +5939,112 @@ class ConjureServer:
         finally:
             if use_signal_timeout:
                 signal.alarm(0)  # Cancel the alarm
+                signal.signal(signal.SIGALRM, old_handler)
+
+    def _cmd_eval_expression(self, params):
+        """Evaluate a Python expression and return its value.
+
+        Unlike run_script which runs statements, this uses eval() and directly
+        returns the expression result. Better for reading values.
+
+        For multi-statement code, use run_script instead.
+        """
+        import signal
+        import sys
+
+        EVAL_TIMEOUT = 10  # seconds
+
+        expression = params.get("expression", "")
+
+        # Basic input validation
+        if not expression or not isinstance(expression, str):
+            return {"status": "error", "error": "Expression must be a non-empty string"}
+
+        if len(expression) > 10000:
+            return {"status": "error", "error": "Expression too long (max 10000 chars)"}
+
+        # Block dangerous imports at string level (defense in depth)
+        dangerous_patterns = ["import subprocess", "import os", "__import__", "eval(", "compile("]
+        for pattern in dangerous_patterns:
+            if pattern in expression:
+                return {"status": "error", "error": f"Blocked pattern detected: {pattern}"}
+
+        # Timeout handler (Unix only - Windows will skip timeout)
+        class EvalTimeoutError(Exception):
+            pass
+
+        def timeout_handler(signum, frame):
+            raise EvalTimeoutError("Expression evaluation exceeded 10s limit")
+
+        # Try to set up signal-based timeout (Unix only)
+        use_signal_timeout = hasattr(signal, "SIGALRM") and sys.platform != "win32"
+
+        if use_signal_timeout:
+            old_handler = signal.signal(signal.SIGALRM, timeout_handler)
+            signal.alarm(EVAL_TIMEOUT)
+
+        try:
+            import math as _math
+
+            Part = __import__("Part") if "Part" in sys.modules else None
+            Draft = __import__("Draft") if "Draft" in sys.modules else None
+            Sketcher = __import__("Sketcher") if "Sketcher" in sys.modules else None
+
+            safe_builtins = {
+                "True": True,
+                "False": False,
+                "None": None,
+                "int": int,
+                "float": float,
+                "str": str,
+                "list": list,
+                "dict": dict,
+                "tuple": tuple,
+                "set": set,
+                "len": len,
+                "range": range,
+                "min": min,
+                "max": max,
+                "sum": sum,
+                "abs": abs,
+                "round": round,
+                "pow": pow,
+                "isinstance": isinstance,
+                "hasattr": hasattr,
+                "getattr": getattr,
+                "type": type,
+            }
+            eval_globals = {
+                "__builtins__": safe_builtins,
+                "App": App,
+                "FreeCAD": App,
+                "Gui": Gui if HAS_GUI else None,
+                "FreeCADGui": Gui if HAS_GUI else None,
+                "Part": Part,
+                "Draft": Draft,
+                "Sketcher": Sketcher,
+                "math": _math,
+            }
+            result = eval(expression, eval_globals)
+            # Convert non-serializable results to str(result) for safe JSON transport
+            try:
+                serialized = self._serialize_value(result)
+            except Exception:
+                serialized = str(result)
+            return {"status": "success", "result": serialized}
+        except SyntaxError as e:
+            return {
+                "status": "error",
+                "error": f"SyntaxError: {e}. Hint: eval() only supports expressions. "
+                "For statements (assignments, loops, etc.), use run_script instead.",
+            }
+        except EvalTimeoutError as e:
+            return {"status": "error", "error": str(e)}
+        except Exception as e:
+            return {"status": "error", "error": str(e)}
+        finally:
+            if use_signal_timeout:
+                signal.alarm(0)
                 signal.signal(signal.SIGALRM, old_handler)
 
     # ==================== Engineering Material Commands ====================

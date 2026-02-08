@@ -40,6 +40,7 @@ _CT = {
     "v1": "capture_view",
     "v2": "set_view",
     "x1": "run_script",
+    "x2": "eval_expression",
 }
 _CT_REV = {v: k for k, v in _CT.items()}
 
@@ -94,6 +95,7 @@ class FreeCADAdapter:
             "set_view": self._v2,
             "capture_view": self._v1,
             "run_script": self._x1,
+            "eval_expression": self._x2,
         }.get(ct)
 
     # Handlers
@@ -268,6 +270,9 @@ FreeCADGui.ActiveDocument.ActiveView.saveImage("{fp}", {w}, {h})""")
 
     async def _x1(self, p: Dict[str, Any]) -> Dict[str, Any]:
         return self.engine.run_script(p["script"])
+
+    async def _x2(self, p: Dict[str, Any]) -> Dict[str, Any]:
+        return self.engine.eval_expression(p["expression"])
 
     def health_check(self) -> bool:
         return self.engine.health_check()
