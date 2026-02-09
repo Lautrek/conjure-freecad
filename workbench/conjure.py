@@ -6033,6 +6033,13 @@ class ConjureServer:
 
             exec(script, exec_globals)
 
+            # Recompute document to persist any shape modifications made by the script.
+            # Without this, direct Shape assignments (obj.Shape = newShape) are ephemeral
+            # and revert between MCP calls or on save.
+            doc = App.ActiveDocument
+            if doc is not None:
+                self._safe_recompute(doc)
+
             # Build captured variables from user-defined names
             captured = {}
             for key, value in exec_globals.items():
