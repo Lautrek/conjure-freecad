@@ -3748,6 +3748,83 @@ class ConjureServer:
         except Exception as e:
             return {"status": "error", "error": f"Shape repair failed: {str(e)}"}
 
+    def _cmd_remove_splitter(self, params):
+        """Remove redundant edges/faces left by boolean operations.
+
+        Applies Part.removeSplitter() and persists the result by creating a
+        new Part::Feature object, avoiding the revert-on-save problem that
+        occurs when directly assigning to a parametric object's Shape.
+
+        Parameters:
+            object_name: Object to clean
+            name: Optional name for the result (default: replaces original)
+        """
+        obj, error = self._get_object(params)
+        if error:
+            return error
+
+        if not hasattr(obj, "Shape"):
+            return {"status": "error", "error": f"Object '{obj.Name}' has no shape"}
+
+        shape = obj.Shape
+        if shape.isNull():
+            return {"status": "error", "error": f"Object '{obj.Name}' has a null shape"}
+
+        before_faces = len(shape.Faces)
+        before_edges = len(shape.Edges)
+
+        try:
+            cleaned = shape.removeSplitter()
+
+            if cleaned.isNull():
+                return {
+                    "status": "error",
+                    "error": "removeSplitter() produced a null shape — original preserved",
+                }
+
+            after_faces = len(cleaned.Faces)
+            after_edges = len(cleaned.Edges)
+
+            doc = self._get_doc()
+            result_name = params.get("name") or obj.Name
+
+            if result_name == obj.Name:
+                # Replace in-place: create new Part::Feature, remove original
+                original_label = obj.Label
+                original_placement = obj.Placement
+                original_visibility = obj.ViewObject.Visibility if hasattr(obj, "ViewObject") and obj.ViewObject else True
+
+                # Remove the original parametric object
+                doc.removeObject(obj.Name)
+
+                # Create a non-parametric Part::Feature with the cleaned shape
+                new_obj = doc.addObject("Part::Feature", result_name)
+                new_obj.Label = original_label
+                new_obj.Shape = cleaned
+                new_obj.Placement = original_placement
+                if hasattr(new_obj, "ViewObject") and new_obj.ViewObject:
+                    new_obj.ViewObject.Visibility = original_visibility
+            else:
+                # Create a separate new object
+                new_obj = doc.addObject("Part::Feature", result_name)
+                new_obj.Label = result_name
+                new_obj.Shape = cleaned
+                new_obj.Placement = obj.Placement
+
+            self._safe_recompute(doc)
+
+            return {
+                "status": "success",
+                "object": new_obj.Name,
+                "before": {"faces": before_faces, "edges": before_edges},
+                "after": {"faces": after_faces, "edges": after_edges},
+                "faces_removed": before_faces - after_faces,
+                "edges_removed": before_edges - after_edges,
+            }
+
+        except Exception as e:
+            return {"status": "error", "error": f"removeSplitter failed: {str(e)}"}
+
     # ==================== Analysis & Validation Commands ====================
 
     def _cmd_check_interference(self, params):
