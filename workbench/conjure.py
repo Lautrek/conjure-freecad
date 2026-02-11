@@ -700,7 +700,9 @@ class ConjureServer:
                     "list_snapshots",
                     "eval_expression",
                 }
-                use_transaction = cmd_type not in _READ_ONLY
+                # Allow per-call transaction opt-out via read_only param
+                read_only_param = params.pop("read_only", False)
+                use_transaction = cmd_type not in _READ_ONLY and not read_only_param
                 doc = App.ActiveDocument
                 if use_transaction and doc:
                     doc.openTransaction(cmd_type)
@@ -5926,6 +5928,8 @@ class ConjureServer:
         FreeCAD types (Vector, Placement, etc.) are auto-serialized to JSON.
 
         Set read_only=true to skip FreeCAD transaction wrapping (default: false).
+        When read_only is true, objects created by the script persist even if
+        the script raises an exception (no rollback).
         """
         import signal
         import sys
