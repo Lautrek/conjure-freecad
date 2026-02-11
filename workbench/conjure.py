@@ -3678,11 +3678,12 @@ class ConjureServer:
     # ==================== Shape Repair Commands ====================
 
     def _cmd_repair_shape(self, params):
-        """Repair shape geometry (sew open shells, fix tolerances).
+        """Repair shape geometry (sew open shells, fix tolerances, remove splitter lines).
 
         Parameters:
             object_name: Object to repair
             tolerance: Sew tolerance in mm (default 0.01)
+            remove_splitter: If True, remove internal seam/splitter lines to simplify topology (default False)
             name: Optional name for repaired copy (default modifies in-place)
         """
         obj, error = self._get_object(params)
@@ -3694,6 +3695,7 @@ class ConjureServer:
 
         shape = obj.Shape
         tolerance = params.get("tolerance", 0.01)
+        remove_splitter = params.get("remove_splitter", False)
         new_name = params.get("name")
 
         before_valid = shape.isValid()
@@ -3712,6 +3714,16 @@ class ConjureServer:
             # Fix tolerance issues
             repaired.fix(tolerance, tolerance, tolerance)
 
+            # Remove internal seam/splitter lines if requested
+            if remove_splitter:
+                repaired = repaired.removeSplitter()
+                # BRep round-trip to ensure the shape serializes correctly on save.
+                # Without this, removeSplitter() results can vanish after save/reload
+                # because the internal topology references may not survive serialization.
+                brep_data = repaired.exportBrepToString()
+                repaired = Part.Shape()
+                repaired.importBrepFromString(brep_data)
+
             after_valid = repaired.isValid()
             after_shells = len(repaired.Shells)
             after_faces = len(repaired.Faces)
@@ -3724,14 +3736,27 @@ class ConjureServer:
                 self._safe_recompute(doc)
                 target_name = new_name
             else:
-                # Modify in-place
-                obj.Shape = repaired
-                self._get_doc().recompute()
-                target_name = obj.Name
+                # For remove_splitter, replace with Part::Feature to prevent
+                # parametric recomputation from overwriting the cleaned shape
+                doc = self._get_doc()
+                if remove_splitter and obj.TypeId != "Part::Feature":
+                    old_label = obj.Label
+                    old_name = obj.Name
+                    doc.removeObject(old_name)
+                    new_obj = doc.addObject("Part::Feature", old_name)
+                    new_obj.Label = old_label
+                    new_obj.Shape = repaired
+                    self._safe_recompute(doc)
+                    target_name = new_obj.Name
+                else:
+                    obj.Shape = repaired
+                    doc.recompute()
+                    target_name = obj.Name
 
             return {
                 "status": "success",
                 "object": target_name,
+                "remove_splitter": remove_splitter,
                 "before": {
                     "valid": before_valid,
                     "shells": before_shells,
