@@ -4078,12 +4078,16 @@ class ConjureServer:
 
         Parameters:
             object_name: Object to validate (optional, validates all if omitted)
+            max_objects: Maximum objects to validate when checking all (default 50)
+            skip_slow_checks: Skip expensive checks like shell closure (default false)
 
         Returns:
             Per-object validity, issues found, and summary.
         """
         doc = self._get_doc()
         target = params.get("object_name")
+        max_objects = params.get("max_objects", 50)
+        skip_slow = params.get("skip_slow_checks", False)
 
         objects_to_check = []
         if target:
@@ -4092,49 +4096,77 @@ class ConjureServer:
                 return {"status": "error", "error": f"Object '{target}' not found"}
             objects_to_check = [obj]
         else:
-            objects_to_check = [o for o in doc.Objects if hasattr(o, "Shape")]
+            all_shapes = [o for o in doc.Objects if hasattr(o, "Shape")]
+            objects_to_check = all_shapes[:max_objects]
 
         results = []
+        skipped = 0
         for obj in objects_to_check:
             issues = []
+            warnings = []
             shape = obj.Shape
             is_null = shape.isNull()
-            is_valid = False if is_null else shape.isValid()
+            is_valid = True
 
             if is_null:
+                is_valid = False
                 issues.append("Shape is null")
-            elif not is_valid:
-                issues.append("Shape fails BRep validity check")
+            else:
+                # BRepCheck - wrap in try/except to catch hangs that raise
+                try:
+                    if not shape.isValid():
+                        is_valid = False
+                        issues.append("Shape fails BRep validity check")
+                except Exception as e:
+                    warnings.append(f"BRep validity check failed: {e}")
 
-            if not is_null:
+                # Quick checks (always run)
                 bb = shape.BoundBox
                 if bb.XLength < 1e-6 or bb.YLength < 1e-6 or bb.ZLength < 1e-6:
                     issues.append(f"Degenerate bounding box: {bb.XLength:.4f} x {bb.YLength:.4f} x {bb.ZLength:.4f}")
                 if hasattr(shape, "Volume") and shape.Volume < 1e-10:
                     issues.append("Near-zero volume")
-                if hasattr(shape, "Shells"):
-                    for i, shell in enumerate(shape.Shells):
-                        if not shell.isClosed():
-                            issues.append(f"Shell {i + 1} is not closed (not watertight)")
 
-            results.append(
-                {
-                    "object": obj.Name,
-                    "type": obj.TypeId,
-                    "valid": is_valid and not is_null,
-                    "issues": issues,
-                }
-            )
+                # Shell closure check - expensive, skip if requested
+                if not skip_slow and hasattr(shape, "Shells"):
+                    shells = shape.Shells
+                    if len(shells) <= 10:  # Cap shell iteration
+                        for i, shell in enumerate(shells):
+                            try:
+                                if not shell.isClosed():
+                                    issues.append(f"Shell {i + 1} is not closed (not watertight)")
+                            except Exception:
+                                warnings.append(f"Shell {i + 1} closure check failed")
+                    else:
+                        warnings.append(f"Skipped shell closure check ({len(shells)} shells, limit 10)")
+                elif skip_slow and hasattr(shape, "Shells") and shape.Shells:
+                    warnings.append("Shell closure check skipped (skip_slow_checks=true)")
+
+            entry = {
+                "object": obj.Name,
+                "type": obj.TypeId,
+                "valid": is_valid and not is_null and len(issues) == 0,
+                "issues": issues,
+            }
+            if warnings:
+                entry["warnings"] = warnings
+            results.append(entry)
 
         valid_count = sum(1 for r in results if r["valid"])
+        total_shapes = len([o for o in doc.Objects if hasattr(o, "Shape")]) if not target else 1
+        summary = {
+            "total": len(results),
+            "valid": valid_count,
+            "invalid": len(results) - valid_count,
+        }
+        if total_shapes > max_objects and not target:
+            summary["skipped"] = total_shapes - max_objects
+            summary["note"] = f"Capped at {max_objects} objects (use max_objects to increase)"
+
         return {
             "status": "success",
             "objects": results,
-            "summary": {
-                "total": len(results),
-                "valid": valid_count,
-                "invalid": len(results) - valid_count,
-            },
+            "summary": summary,
         }
 
     # ==================== Check All & Suggest Fixes ====================
@@ -4147,38 +4179,12 @@ class ConjureServer:
         doc = self._get_doc()
         shape_objects = [o for o in doc.Objects if hasattr(o, "Shape")]
 
-        # Validate each object
-        object_results = []
-        for obj in shape_objects:
-            issues = []
-            shape = obj.Shape
-            is_null = shape.isNull()
-            is_valid = False if is_null else shape.isValid()
-
-            if is_null:
-                issues.append("Shape is null")
-            elif not is_valid:
-                issues.append("Shape fails BRep validity check")
-
-            if not is_null:
-                bb = shape.BoundBox
-                if bb.XLength < 1e-6 or bb.YLength < 1e-6 or bb.ZLength < 1e-6:
-                    issues.append(f"Degenerate bounding box: {bb.XLength:.4f} x {bb.YLength:.4f} x {bb.ZLength:.4f}")
-                if hasattr(shape, "Volume") and shape.Volume < 1e-10:
-                    issues.append("Near-zero volume")
-                if hasattr(shape, "Shells"):
-                    for i, shell in enumerate(shape.Shells):
-                        if not shell.isClosed():
-                            issues.append(f"Shell {i + 1} is not closed (not watertight)")
-
-            object_results.append(
-                {
-                    "object": obj.Name,
-                    "type": obj.TypeId,
-                    "valid": is_valid and not is_null,
-                    "issues": issues,
-                }
-            )
+        # Delegate to _cmd_validate_geometry for consistent behavior
+        validate_result = self._cmd_validate_geometry({
+            "max_objects": params.get("max_objects", 50),
+            "skip_slow_checks": params.get("skip_slow_checks", False),
+        })
+        object_results = validate_result.get("objects", [])
 
         # Check interference between all pairs
         interferences = []
