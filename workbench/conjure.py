@@ -5089,6 +5089,64 @@ class ConjureServer:
         except Exception as e:
             return {"status": "error", "error": f"STL import failed: {e}"}
 
+    def _cmd_import_step(self, params):
+        """Import a STEP file into the document.
+
+        Parameters:
+            filepath: Path to the STEP file
+            name: Optional label for the imported object(s)
+        """
+        import os
+
+        import Part
+
+        filepath = params.get("filepath") or params.get("input_path")
+        name = params.get("name")
+
+        if not filepath:
+            return {"status": "error", "error": "Missing required parameter: 'filepath'"}
+
+        if not os.path.exists(filepath):
+            return {"status": "error", "error": f"File not found: {filepath}"}
+
+        doc = self._get_doc()
+
+        try:
+            # Track objects before import
+            pre_objects = set(obj.Name for obj in doc.Objects)
+
+            Part.insert(filepath, doc.Name)
+            self._safe_recompute(doc)
+
+            # Find newly added objects
+            new_objects = []
+            for obj in doc.Objects:
+                if obj.Name not in pre_objects:
+                    new_objects.append(obj)
+
+            # Apply label if requested
+            if name and len(new_objects) == 1:
+                new_objects[0].Label = name
+            elif name and len(new_objects) > 1:
+                for i, obj in enumerate(new_objects):
+                    obj.Label = f"{name}_{i + 1}" if i > 0 else name
+
+            self._safe_recompute(doc)
+
+            imported_names = [obj.Name for obj in new_objects]
+            imported_labels = [obj.Label for obj in new_objects]
+
+            result = {
+                "status": "success",
+                "filepath": filepath,
+                "objects": imported_names,
+                "labels": imported_labels,
+                "count": len(new_objects),
+            }
+            return result
+        except Exception as e:
+            return {"status": "error", "error": f"STEP import failed: {e}"}
+
     # ==================== Face Index Resolution Helper ====================
 
     def _resolve_face_index(self, obj, face_selector):
@@ -6032,6 +6090,11 @@ class ConjureServer:
             pre_keys = set(exec_globals.keys())
 
             exec(script, exec_globals)
+
+            # Recompute so script modifications (Shape, Label, etc.) persist
+            doc = App.ActiveDocument
+            if doc is not None:
+                self._safe_recompute(doc)
 
             # Build captured variables from user-defined names
             captured = {}
