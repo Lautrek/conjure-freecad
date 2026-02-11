@@ -2043,8 +2043,12 @@ class ConjureServer:
                 elif profile_type == "ellipse":
                     major = profile_params.get("major", 20)
                     minor = profile_params.get("minor", 10)
-                    ellipse = Part.Ellipse(App.Vector(*position), major, minor)
+                    # Create ellipse at origin then translate to position
+                    # (Part.Ellipse center parameter doesn't reliably
+                    # position the resulting edge in 3D space)
+                    ellipse = Part.Ellipse(App.Vector(0, 0, 0), major, minor)
                     wire = Part.Wire(Part.Edge(ellipse))
+                    wire.translate(App.Vector(*position))
 
                 else:
                     return {"status": "error", "error": f"Unknown profile type: {profile_type}"}
